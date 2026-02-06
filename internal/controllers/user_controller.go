@@ -7,22 +7,22 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SignUpGin(c *gin.Context) {
+func SignUpGin(c *gin.Context, authService *service.AuthService) {
 
 	var body service.SignUpInfo
 
-	err := c.BindJSON(&body)
+	err := c.ShouldBindJSON(&body)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Failed to read body",
+			"error": "Invalid Request",
 		})
 		return
 	}
 
-	user, err := service.SignUp(body)
+	user, err := authService.SignUp(body)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "SignUP failed!",
+			"error": err,
 		})
 		return
 	}

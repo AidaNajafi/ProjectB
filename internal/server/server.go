@@ -1,29 +1,22 @@
 package server
 
 import (
-	"net/http"
+	"authentication/internal/controllers"
+	"authentication/internal/service"
+
 	"github.com/gin-gonic/gin"
 )
 
-func SetUpRoutes(){
+func SetUpRoutes(authService *service.AuthService) *gin.Engine {
 	router := gin.Default()
-	router.POST("login", Login())
-	router.POST("/signup", SignUp())
-	
-	protec
+	router.POST("/signup", signUpHandler(authService))
+	return router
+}
+
+func signUpHandler(authService *service.AuthService) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		controllers.SignUpGin(c, authService)
+	}
 }
 
 
-
-func Login(c *gin.Context) {
-	c.IndentedJSON(http.StatusOK, gin.H{
-		"message": "login successful",
-	})
-}
-
-
-func SignUp(c *gin.Context){
-	c.IndentedJSON(http.StatusOK, gin.H{
-		"message": "signup successful"
-	})
-}

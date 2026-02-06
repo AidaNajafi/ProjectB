@@ -2,6 +2,7 @@ package service
 
 import (
 	"authentication/internal/helpers"
+	"authentication/internal/repository"
 	"authentication/models"
 	"errors"
 )
@@ -13,21 +14,35 @@ type SignUpInfo struct {
 	Password string `json:"password"`
 }
 
+type AuthService struct {
+	repo *repository.CsvRepository
+}
+
+func NewAuthService(r *repository.CsvRepository) *AuthService {
+	return &AuthService{repo: r}
+}
+
 type LoginInfo struct {
 	Username string
 	Password string
 }
 
-func SignUp(info SignUpInfo) (models.User, error) {
+func (a *AuthService) SignUp(info SignUpInfo) (models.User, error) {
 	pass, err := helpers.HashPassword(info.Password)
 	if err != nil {
 		return models.User{}, err
 	}
+	id, err := a.repo.GenerateID()
 	user := models.User{
+		ID:       id,
 		Name:     info.Name,
 		Username: info.Username,
 		Email:    info.Email,
 		Password: pass}
+
+	if err := a.repo.Create(user); err != nil {
+		return models.User{}, err
+	}
 
 	return user, nil
 
