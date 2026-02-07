@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"authentication/internal/service"
+	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -21,8 +23,9 @@ func SignUpGin(c *gin.Context, authService *service.AuthService) {
 
 	user, err := authService.SignUp(body)
 	if err != nil {
+		log.Println(err)
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err,
+			"error": "Sign up failed",
 		})
 		return
 	}
@@ -35,20 +38,20 @@ func SignUpGin(c *gin.Context, authService *service.AuthService) {
 }
 
 func LoginGin(c *gin.Context, authService *service.AuthService) {
+	fmt.Println("Login endpoint hit")
 	var body service.LoginInfo
 	if err := c.ShouldBindJSON(&body); err != nil || body.Username == "" || body.Password == "" {
 		c.JSON(400, gin.H{
 			"error": "Invalid request, username and password are required",
 		})
-		c.Abort()
 		return
 	}
 	user, err := authService.Login(body)
 	if err != nil {
+		log.Println(err)
 		c.JSON(401, gin.H{
 			"error": "wrong username or password",
 		})
-		c.Abort()
 		return
 	}
 	c.JSON(http.StatusAccepted, gin.H{

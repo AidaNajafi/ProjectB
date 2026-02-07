@@ -1,13 +1,13 @@
 package repository
 
 import (
-	"authentication/internal/helpers"
 	"authentication/models"
 	"encoding/csv"
 	"errors"
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 )
 
@@ -47,20 +47,20 @@ func (r *CsvRepository) Init() error {
 func (r *CsvRepository) Create(user models.User) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	file, err := os.OpenFile(r.filePath, os.O_APPEND|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(r.filePath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
-		return errors.New("Failed to open file")
+		return fmt.Errorf("Failed to open file: %w", err)
 	}
+
 	defer file.Close()
 	writer := csv.NewWriter(file)
 	defer writer.Flush()
-	hasehdPass, _ := helpers.HashPassword(user.Password)
 	record := []string{
 		strconv.Itoa(user.ID),
 		user.Name,
 		user.Username,
 		user.Email,
-		hasehdPass,
+		user.Password,
 	}
 	return writer.Write(record)
 }
@@ -94,19 +94,22 @@ func (r *CsvRepository) ReadAll() ([]models.User, error) {
 	defer r.mu.Unlock()
 	file, err := os.Open(r.filePath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open file", err)
+		return nil, fmt.Errorf("failed to open file: %w", err)
 	}
 	defer file.Close()
 	reader := csv.NewReader(file)
 	records, err := reader.ReadAll()
 	if err != nil {
-		return nil, fmt.Errorf("Failed to read file path", err)
+		return nil, fmt.Errorf("Failed to read file path: %w", err)
 	}
 	var users []models.User
 	for _, rec := range records {
+		if len(rec) < 5{
+			continue
+		}
 		id, err := strconv.Atoi(rec[0])
 		if err != nil {
-			return nil, fmt.Errorf("Failed to convert id to int", err)
+			return nil, fmt.Errorf("Failed to convert id to int: %w", err)
 		}
 		user := models.User{
 			ID:       id,
@@ -121,14 +124,21 @@ func (r *CsvRepository) ReadAll() ([]models.User, error) {
 }
 
 func (r *CsvRepository) GetUserByUsername(username string) (models.User, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	users, err := r.ReadAll()
 	if err != nil {
-		return models.User{}, fmt.Errorf("Failed to read path", err)
+		return models.User{}, fmt.Errorf("Failed to read path: %w", err)
 	}
 	for _, u := range users {
-		if u.Username == username {
+		if strings.TrimSpace(u.Username) == username {
+			u.Name = strings.TrimSpace(u.Name)
+			u.Username = strings.TrimSpace(u.Username)
+			u.Email = strings.TrimSpace(u.Email)
+			u.Password = strings.TrimSpace(u.Password)
 			return u, nil
 		}
+
 	}
 	return models.User{}, errors.New("User not found!")
 }

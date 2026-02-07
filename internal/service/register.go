@@ -5,6 +5,8 @@ import (
 	"authentication/internal/repository"
 	"authentication/models"
 	"errors"
+	"fmt"
+	"strings"
 )
 
 type SignUpInfo struct {
@@ -53,9 +55,14 @@ func (a *AuthService) Login(info LoginInfo) (models.User, error) {
 	if err != nil {
 		return models.User{}, errors.New("Wrong username!")
 	}
+
+	user.Password = strings.TrimSpace(user.Password)
+
 	if !helpers.CheckPassword(info.Password, user.Password) {
+		fmt.Println(info.Password)
+		fmt.Println(user.Password)
 		return models.User{}, errors.New("Wrong password!")
 	}
-	user.Password = ""
+
 	return user, nil
 }
