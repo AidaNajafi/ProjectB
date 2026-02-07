@@ -13,7 +13,7 @@ type Config struct {
 func LoadConfig(args []string) (Config, error) {
 	fs := flag.NewFlagSet("authentication", flag.ContinueOnError)
 	var cfg Config
-	fs.StringVar(&cfg.FilePath, "file", "/home/aida-najafi/Go/project2.0/testFiles/users.csv", "our mock database")
+	fs.StringVar(&cfg.FilePath, "file", "./data/users.csv", "our mock database")
 	fs.IntVar(&cfg.Port, "port", 8080, "optional port")
 	if err := fs.Parse(args); err != nil {
 		return Config{}, err
