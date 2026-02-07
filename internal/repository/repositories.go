@@ -5,6 +5,7 @@ import (
 	"authentication/models"
 	"encoding/csv"
 	"errors"
+	"fmt"
 	"os"
 	"strconv"
 	"sync"
@@ -86,4 +87,48 @@ func (r *CsvRepository) GenerateID() (int, error) {
 		return 0, err
 	}
 	return id + 1, nil
+}
+
+func (r *CsvRepository) ReadAll() ([]models.User, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	file, err := os.Open(r.filePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open file", err)
+	}
+	defer file.Close()
+	reader := csv.NewReader(file)
+	records, err := reader.ReadAll()
+	if err != nil {
+		return nil, fmt.Errorf("Failed to read file path", err)
+	}
+	var users []models.User
+	for _, rec := range records {
+		id, err := strconv.Atoi(rec[0])
+		if err != nil {
+			return nil, fmt.Errorf("Failed to convert id to int", err)
+		}
+		user := models.User{
+			ID:       id,
+			Name:     rec[1],
+			Username: rec[2],
+			Email:    rec[3],
+			Password: rec[4],
+		}
+		users = append(users, user)
+	}
+	return users, nil
+}
+
+func (r *CsvRepository) GetUserByUsername(username string) (models.User, error) {
+	users, err := r.ReadAll()
+	if err != nil {
+		return models.User{}, fmt.Errorf("Failed to read path", err)
+	}
+	for _, u := range users {
+		if u.Username == username {
+			return u, nil
+		}
+	}
+	return models.User{}, errors.New("User not found!")
 }

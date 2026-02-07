@@ -48,12 +48,14 @@ func (a *AuthService) SignUp(info SignUpInfo) (models.User, error) {
 
 }
 
-func Login(info LoginInfo) (bool, error) {
-
-	var body models.User
-	if info.Username == body.Username || info.Password == body.Password {
-		return true, nil
-	} else {
-		return false, errors.New("Wrong credentials")
+func (a *AuthService) Login(info LoginInfo) (models.User, error) {
+	user, err := a.repo.GetUserByUsername(info.Username)
+	if err != nil {
+		return models.User{}, errors.New("Wrong username!")
 	}
+	if !helpers.CheckPassword(info.Password, user.Password) {
+		return models.User{}, errors.New("Wrong password!")
+	}
+	user.Password = ""
+	return user, nil
 }

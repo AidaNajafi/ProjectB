@@ -10,6 +10,7 @@ import (
 func SetUpRoutes(authService *service.AuthService) *gin.Engine {
 	router := gin.Default()
 	router.POST("/signup", signUpHandler(authService))
+	router.POST("/login", loginHandler(authService))
 	return router
 }
 
@@ -19,4 +20,8 @@ func signUpHandler(authService *service.AuthService) gin.HandlerFunc {
 	}
 }
 
-
+func loginHandler(authService *service.AuthService) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		controllers.LoginGin(c, authService)
+	}
+}
