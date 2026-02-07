@@ -22,6 +22,7 @@ func NewCSVRepo(path string) *CsvRepository {
 	}
 }
 
+
 func (r *CsvRepository) Init() error {
 	_, err := os.Stat(r.filePath)
 	if os.IsNotExist(err) {

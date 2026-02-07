@@ -17,7 +17,7 @@ type SignUpInfo struct {
 }
 
 type AuthService struct {
-	repo *repository.CsvRepository
+	repo repository.Store
 }
 
 func NewAuthService(r *repository.CsvRepository) *AuthService {
