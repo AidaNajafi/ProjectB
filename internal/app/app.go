@@ -1,17 +1,24 @@
 package app
 
 import (
-	"net/http"
-
-	"github.com/gin-gonic/gin"
+	"authentication/internal/config"
+	"authentication/internal/repository"
+	"authentication/internal/server"
+	"authentication/internal/service"
+	"fmt"
+	"log"
 )
 
-func StartGin() {
-	router := gin.Default()
-	router.GET("/ping", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "pong",
-		})
-	})
-	router.Run()
+func App(flags []string) error {
+	cfg, err := config.LoadConfig(flags)
+	if err != nil {
+		return fmt.Errorf("loadConfig failed", err)
+	}
+	repo := repository.NewCSVRepo(cfg.FilePath)
+	svc := service.NewAuthService(repo)
+	addr := fmt.Sprintf(":%d", cfg.Port)
+	log.Printf("Starting server on port: %d", addr)
+	router := server.SetUpRoutes(svc)
+	return router.Run(addr)
+
 }

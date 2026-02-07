@@ -1,17 +1,16 @@
 package main
 
 import (
-	"net/http"
-
-	"github.com/gin-gonic/gin"
+	"authentication/internal/app"
+	"fmt"
+	"os"
 )
 
 func main() {
-	router := gin.Default()
-	router.GET("/ping", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "pong",
-		})
-	})
-	router.Run()
+	flags := os.Args[1:]
+	if err := app.App(flags); err != nil {
+		fmt.Println("Failed to run server!")
+		os.Exit(1)
+	}
+
 }
