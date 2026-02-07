@@ -38,14 +38,15 @@ func SignUpGin(c *gin.Context, authService *service.AuthService) {
 }
 
 func LoginGin(c *gin.Context, authService *service.AuthService) {
-	fmt.Println("Login endpoint hit")
 	var body service.LoginInfo
 	if err := c.ShouldBindJSON(&body); err != nil || body.Username == "" || body.Password == "" {
+		fmt.Println("error in here")
 		c.JSON(400, gin.H{
 			"error": "Invalid request, username and password are required",
 		})
 		return
 	}
+
 	user, err := authService.Login(body)
 	if err != nil {
 		log.Println(err)

@@ -51,13 +51,13 @@ func (a *AuthService) SignUp(info SignUpInfo) (models.User, error) {
 }
 
 func (a *AuthService) Login(info LoginInfo) (models.User, error) {
+
 	user, err := a.repo.GetUserByUsername(info.Username)
 	if err != nil {
 		return models.User{}, errors.New("Wrong username!")
 	}
 
 	user.Password = strings.TrimSpace(user.Password)
-
 	if !helpers.CheckPassword(info.Password, user.Password) {
 		fmt.Println(info.Password)
 		fmt.Println(user.Password)

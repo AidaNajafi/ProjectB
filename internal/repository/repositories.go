@@ -124,8 +124,7 @@ func (r *CsvRepository) ReadAll() ([]models.User, error) {
 }
 
 func (r *CsvRepository) GetUserByUsername(username string) (models.User, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
+
 	users, err := r.ReadAll()
 	if err != nil {
 		return models.User{}, fmt.Errorf("Failed to read path: %w", err)

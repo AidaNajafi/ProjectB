@@ -15,6 +15,9 @@ func App(flags []string) error {
 		return fmt.Errorf("loadConfig failed: %w", err)
 	}
 	repo := repository.NewCSVRepo(cfg.FilePath)
+	if err := repo.Init(); err != nil {
+		return fmt.Errorf("Header creation failed: %w", err)
+	}
 	svc := service.NewAuthService(repo)
 	addr := fmt.Sprintf(":%d", cfg.Port)
 	log.Printf("Starting server on port: %s", addr)
