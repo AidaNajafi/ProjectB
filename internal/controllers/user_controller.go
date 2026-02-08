@@ -2,61 +2,109 @@ package controllers
 
 import (
 	"authentication/internal/service"
-	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 )
 
-func SignUpGin(c *gin.Context, authService *service.AuthService) {
-
-	var body service.SignUpInfo
-
-	err := c.ShouldBindJSON(&body)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid Request",
-		})
-		return
-	}
-
-	user, err := authService.SignUp(body)
-	if err != nil {
-		log.Println(err)
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Sign up failed",
-		})
-		return
-	}
-
-	c.JSON(http.StatusCreated, gin.H{
-		"message": "Signup successful",
-		"user":    user.Username,
-	})
-
+type SignUpControl struct {
+	ID       int    `json:"id"`
+	Name     string `json:"name" validate:"required"`
+	Username string `json:"username" validate:"required"`
+	Email    string `json:"email" validate:"required"`
+	Password string `json:"password" validate:"required"`
 }
 
-func LoginGin(c *gin.Context, authService *service.AuthService) {
-	var body service.LoginInfo
-	if err := c.ShouldBindJSON(&body); err != nil || body.Username == "" || body.Password == "" {
-		fmt.Println("error in here")
-		c.JSON(400, gin.H{
-			"error": "Invalid request, username and password are required",
-		})
-		return
-	}
+type LoginControl struct {
+	Username string `json:"username" validate:"required"`
+	Password string `json:"password" validate:"required"`
+}
+type Controller struct {
+	svc *service.AuthService
+}
 
-	user, err := authService.Login(body)
-	if err != nil {
-		log.Println(err)
-		c.JSON(401, gin.H{
-			"error": "wrong username or password",
+func NewController(svc *service.AuthService) *Controller {
+	return &Controller{svc: svc}
+}
+
+var validate = validator.New()
+
+func (c *Controller) SignUpGin(authService *service.AuthService) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+
+		var body SignUpControl
+		err := ctx.ShouldBindJSON(&body)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"error":   err,
+				"message": "Invalid Request",
+			})
+			return
+		}
+		if err := validate.Struct(body); err != nil {
+			ctx.JSON(400, gin.H{
+				"error":   err,
+				"message": "All fields must be filled!",
+			})
+			return
+		}
+		SReq := service.SignUpRequest{
+			ID:       body.ID,
+			Name:     body.Name,
+			Username: body.Username,
+			Password: body.Password,
+		}
+
+		err = c.svc.SignUp(SReq)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"error":   err,
+				"message": "Sign up failed",
+			})
+			return
+		}
+
+		ctx.JSON(http.StatusCreated, gin.H{
+			"message": "Signup successful",
+			"user":    body.Username,
 		})
-		return
 	}
-	c.JSON(http.StatusAccepted, gin.H{
-		"message": "login successful",
-		"user":    user.Username,
-	})
+}
+
+func (c *Controller) LoginGin(authService *service.AuthService) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+
+		var body LoginControl
+		if err := ctx.ShouldBindJSON(&body); err != nil {
+			ctx.JSON(400, gin.H{
+				"error":   err,
+				"message": "Invalid request body",
+			})
+			return
+		}
+		if err := validate.Struct(body); err != nil {
+			ctx.JSON(400, gin.H{
+				"error":   err,
+				"message": "validation failed, username and password are required!",
+			})
+			return
+		}
+		SLogReq := service.LoginRequest{
+			Username: body.Username,
+			Password: body.Password,
+		}
+		err := authService.Login(SLogReq)
+		if err != nil {
+			ctx.JSON(401, gin.H{
+				"error":   err,
+				"message": "wrong username or password",
+			})
+			return
+		}
+		ctx.JSON(http.StatusAccepted, gin.H{
+			"message": "login successful",
+			"user":    body.Username,
+		})
+	}
 }

@@ -7,21 +7,17 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetUpRoutes(authService *service.AuthService) *gin.Engine {
+type Server struct {
+	srv *controllers.Controller
+}
+
+func NewServer(srv *controllers.Controller) *Server {
+	return &Server{srv: srv}
+}
+
+func (s *Server) SetUpRoutes(authService *service.AuthService) *gin.Engine {
 	router := gin.Default()
-	router.POST("/signup", signUpHandler(authService))
-	router.POST("/login", loginHandler(authService))
+	router.POST("/signup", s.srv.SignUpGin(authService))
+	router.POST("/login", s.srv.LoginGin(authService))
 	return router
-}
-
-func signUpHandler(authService *service.AuthService) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		controllers.SignUpGin(c, authService)
-	}
-}
-
-func loginHandler(authService *service.AuthService) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		controllers.LoginGin(c, authService)
-	}
 }

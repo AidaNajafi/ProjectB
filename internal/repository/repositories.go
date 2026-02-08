@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"authentication/models"
 	"encoding/csv"
 	"errors"
 	"fmt"
@@ -16,12 +15,19 @@ type CsvRepository struct {
 	filePath string
 }
 
+type User struct {
+	ID       int
+	Name     string
+	Username string
+	Email    string
+	Password string
+}
+
 func NewCSVRepo(path string) *CsvRepository {
 	return &CsvRepository{
 		filePath: path,
 	}
 }
-
 
 func (r *CsvRepository) Init() error {
 	_, err := os.Stat(r.filePath)
@@ -45,7 +51,7 @@ func (r *CsvRepository) Init() error {
 
 }
 
-func (r *CsvRepository) Create(user models.User) error {
+func (r *CsvRepository) Create(user User) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	file, err := os.OpenFile(r.filePath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
@@ -63,6 +69,7 @@ func (r *CsvRepository) Create(user models.User) error {
 		user.Email,
 		user.Password,
 	}
+
 	return writer.Write(record)
 }
 
@@ -71,26 +78,26 @@ func (r *CsvRepository) GenerateID() (int, error) {
 	defer r.mu.Unlock()
 	file, err := os.Open(r.filePath)
 	if err != nil {
-		return 1, nil
+		return 1, fmt.Errorf("Failed to open file: %w", err)
 	}
 	defer file.Close()
 	reader := csv.NewReader(file)
 	record, err := reader.ReadAll()
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("Failed to read csv file!: %w", err)
 	}
 	if len(record) <= 1 {
-		return 1, nil
+		return 0, errors.New("File is empty!")
 	}
 	lastRow := record[len(record)-1]
-	id, err := strconv.Atoi(lastRow[0])
-	if err != nil {
-		return 0, err
+	id, erri := strconv.Atoi(lastRow[0])
+	if erri != nil {
+		return 0, erri
 	}
 	return id + 1, nil
 }
 
-func (r *CsvRepository) ReadAll() ([]models.User, error) {
+func (r *CsvRepository) ReadAll() ([]User, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	file, err := os.Open(r.filePath)
@@ -103,16 +110,16 @@ func (r *CsvRepository) ReadAll() ([]models.User, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Failed to read file path: %w", err)
 	}
-	var users []models.User
+	var users []User
 	for _, rec := range records {
-		if len(rec) < 5{
+		if len(rec) < 5 {
 			continue
 		}
 		id, err := strconv.Atoi(rec[0])
 		if err != nil {
 			return nil, fmt.Errorf("Failed to convert id to int: %w", err)
 		}
-		user := models.User{
+		user := User{
 			ID:       id,
 			Name:     rec[1],
 			Username: rec[2],
@@ -124,11 +131,10 @@ func (r *CsvRepository) ReadAll() ([]models.User, error) {
 	return users, nil
 }
 
-func (r *CsvRepository) GetUserByUsername(username string) (models.User, error) {
-
+func (r *CsvRepository) GetUserByUsername(username string) (*User, error) {
 	users, err := r.ReadAll()
 	if err != nil {
-		return models.User{}, fmt.Errorf("Failed to read path: %w", err)
+		return &User{}, fmt.Errorf("Failed to read path: %w", err)
 	}
 	for _, u := range users {
 		if strings.TrimSpace(u.Username) == username {
@@ -136,9 +142,9 @@ func (r *CsvRepository) GetUserByUsername(username string) (models.User, error) 
 			u.Username = strings.TrimSpace(u.Username)
 			u.Email = strings.TrimSpace(u.Email)
 			u.Password = strings.TrimSpace(u.Password)
-			return u, nil
+			return &u, nil
 		}
 
 	}
-	return models.User{}, errors.New("User not found!")
+	return &User{}, errors.New("User not found!")
 }

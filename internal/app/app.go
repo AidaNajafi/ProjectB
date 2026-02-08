@@ -2,6 +2,7 @@ package app
 
 import (
 	"authentication/internal/config"
+	"authentication/internal/controllers"
 	"authentication/internal/repository"
 	"authentication/internal/server"
 	"authentication/internal/service"
@@ -9,19 +10,25 @@ import (
 	"log"
 )
 
-func App(flags []string) error {
+type App struct {
+	app *server.Server
+}
+
+func AppStart(flags []string) error {
 	cfg, err := config.LoadConfig(flags)
 	if err != nil {
 		return fmt.Errorf("loadConfig failed: %w", err)
 	}
+	addr := fmt.Sprintf(":%d", cfg.Port)
 	repo := repository.NewCSVRepo(cfg.FilePath)
 	if err := repo.Init(); err != nil {
 		return fmt.Errorf("Header creation failed: %w", err)
 	}
 	svc := service.NewAuthService(repo)
-	addr := fmt.Sprintf(":%d", cfg.Port)
+	srv := controllers.NewController(svc)
+	newS := server.NewServer(srv)
 	log.Printf("Starting server on port: %s", addr)
-	router := server.SetUpRoutes(svc)
+	router := newS.SetUpRoutes(svc)
 	return router.Run(addr)
 
 }
