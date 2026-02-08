@@ -19,6 +19,8 @@ func NewServer(srv *controllers.Controller) *Server {
 func (s *Server) SetUpRoutes(authService *service.AuthService) *gin.Engine {
 	router := gin.Default()
 	router.Use(middleware.LoggerMiddleware())
+	router.Use(middleware.LoggerMiddleware())
+
 	router.POST("/signup", s.srv.SignUpGin(authService))
 	router.POST("/login", s.srv.LoginGin(authService))
 	return router

@@ -5,7 +5,6 @@ import (
 	"authentication/internal/repository"
 	"errors"
 	"fmt"
-	"strings"
 )
 
 type AuthService struct {
@@ -17,7 +16,7 @@ func NewAuthService(r repository.Store) *AuthService {
 }
 
 func (a *AuthService) SignUp(user SignUpRequest) error {
-	
+
 	hashed, err := helpers.HashPassword(user.Password)
 	if err != nil {
 		return err
@@ -42,15 +41,14 @@ func (a *AuthService) SignUp(user SignUpRequest) error {
 
 }
 
-func (a *AuthService) Login(user LoginRequest) (int, error) {
-
-	InUser, err := a.repo.GetUserByUsername(user.Username)
+func (a *AuthService) Login(userLog LoginRequest) (int, error) {
+	InUser, err := a.repo.GetUserByUsername(userLog.Username)
 	if err != nil {
 		return 0, fmt.Errorf("Failed to filter by Username! :%w", err)
 	}
-
-	user.Password = strings.TrimSpace(user.Password)
-	if !helpers.CheckPassword(InUser.Password, user.Password) {
+	fmt.Println(userLog.Password)
+	fmt.Println(InUser.Password)
+	if !helpers.CheckPassword(userLog.Password, InUser.Password) {
 		return 0, errors.New("Wrong password!")
 	}
 

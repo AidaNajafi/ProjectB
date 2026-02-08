@@ -95,6 +95,7 @@ func (c *Controller) LoginGin(authService *service.AuthService) gin.HandlerFunc 
 			Password: body.Password,
 		}
 		userId, err := authService.Login(SLogReq)
+		
 		if err != nil {
 			ctx.JSON(401, gin.H{
 				"error":   err,

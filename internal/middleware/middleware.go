@@ -33,7 +33,7 @@ func JwtMiddleware() gin.HandlerFunc {
 				"error": "missing authorization header",
 			})
 		}
-		jwtSecret := []byte(os.Getenv("JWT_SECRET"))
+		// jwtSecret := []byte(os.Getenv("JWT_SECRET"))
 		token, err := jwt.Parse(tokeStr, func(t *jwt.Token) (interface{}, error) {
 			return jwtSecret, nil
 		})
