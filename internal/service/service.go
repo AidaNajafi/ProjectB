@@ -42,17 +42,17 @@ func (a *AuthService) SignUp(user SignUpRequest) error {
 
 }
 
-func (a *AuthService) Login(user LoginRequest) error {
+func (a *AuthService) Login(user LoginRequest) (int, error) {
 
 	InUser, err := a.repo.GetUserByUsername(user.Username)
 	if err != nil {
-		return fmt.Errorf("Failed to filter by Username! :%w", err)
+		return 0, fmt.Errorf("Failed to filter by Username! :%w", err)
 	}
 
 	user.Password = strings.TrimSpace(user.Password)
 	if !helpers.CheckPassword(InUser.Password, user.Password) {
-		return errors.New("Wrong password!")
+		return 0, errors.New("Wrong password!")
 	}
 
-	return nil
+	return InUser.ID, nil
 }

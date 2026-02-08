@@ -1,7 +1,10 @@
 package middleware
 
 import (
+	"fmt"
 	"log"
+	"net/http"
+	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -10,31 +13,38 @@ import (
 )
 
 func LoggerMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
+	return func(ctx *gin.Context) {
 		start := time.Now()
 		requestID := uuid.New().String()
-		c.Set("requestID", requestID)
-		c.Next()
+		ctx.Set("requestID", requestID)
+		ctx.Next()
 		latency := time.Since(start)
-		status := c.Writer.Status()
-		endpoint := c.Request.Method + " " + c.FullPath()
+		status := ctx.Writer.Status()
+		endpoint := ctx.Request.Method + " " + ctx.FullPath()
 		log.Printf("[%s], RequestID: %s, latency: %s, status: %d, endpoint: %s", time.Now().Format(time.RFC3339), requestID, latency, status, endpoint)
 	}
 }
 
-func JwtMiddleware(jwtSecret []byte) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		tokeStr := c.GetHeader("Authorization")[7:]
+func JwtMiddleware() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		tokeStr := ctx.GetHeader("Authorization")[7:]
+		if tokeStr == "" {
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"error": "missing authorization header",
+			})
+		}
+		jwtSecret := []byte(os.Getenv("JWT_SECRET"))
 		token, err := jwt.Parse(tokeStr, func(t *jwt.Token) (interface{}, error) {
 			return jwtSecret, nil
 		})
 		if err != nil || !token.Valid {
-			c.JSON(401, gin.H{
+			ctx.JSON(401, gin.H{
 				"error": "invalid token",
 			})
-			c.Abort()
+			ctx.Abort()
 			return
 		}
-		c.Next()
+		fmt.Println("does it reach here?")
+		ctx.Next()
 	}
 }

@@ -94,7 +94,7 @@ func (c *Controller) LoginGin(authService *service.AuthService) gin.HandlerFunc 
 			Username: body.Username,
 			Password: body.Password,
 		}
-		err := authService.Login(SLogReq)
+		userId, err := authService.Login(SLogReq)
 		if err != nil {
 			ctx.JSON(401, gin.H{
 				"error":   err,
@@ -102,9 +102,16 @@ func (c *Controller) LoginGin(authService *service.AuthService) gin.HandlerFunc 
 			})
 			return
 		}
+
+		tokenString, err := service.GenerateToken(userId)
+		if err != nil {
+			return
+		}
+
 		ctx.JSON(http.StatusAccepted, gin.H{
 			"message": "login successful",
 			"user":    body.Username,
+			"token":   tokenString,
 		})
 	}
 }

@@ -8,6 +8,8 @@ import (
 	"authentication/internal/service"
 	"fmt"
 	"log"
+
+	"github.com/joho/godotenv"
 )
 
 type App struct {
@@ -15,6 +17,10 @@ type App struct {
 }
 
 func AppStart(flags []string) error {
+	err := godotenv.Load("my.env")
+	if err != nil {
+		log.Println("Failed to find env file")
+	}
 	cfg, err := config.LoadConfig(flags)
 	if err != nil {
 		return fmt.Errorf("loadConfig failed: %w", err)
