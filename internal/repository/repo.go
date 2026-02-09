@@ -6,4 +6,5 @@ type Store interface {
 	GenerateID() (int, error)
 	ReadAll() ([]User, error)
 	GetUserByUsername(username string) (*User, error)
+	AlreadyExistCheck(username, email string) error
 }

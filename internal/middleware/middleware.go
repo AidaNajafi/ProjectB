@@ -1,10 +1,9 @@
 package middleware
 
 import (
-	"fmt"
+	"authentication/internal/service"
 	"log"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -25,7 +24,7 @@ func LoggerMiddleware() gin.HandlerFunc {
 	}
 }
 
-func JwtMiddleware() gin.HandlerFunc {
+func JwtMiddleware(jwtSvc *service.JwtService) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		tokeStr := ctx.GetHeader("Authorization")[7:]
 		if tokeStr == "" {
@@ -33,9 +32,9 @@ func JwtMiddleware() gin.HandlerFunc {
 				"error": "missing authorization header",
 			})
 		}
-		// jwtSecret := []byte(os.Getenv("JWT_SECRET"))
+
 		token, err := jwt.Parse(tokeStr, func(t *jwt.Token) (interface{}, error) {
-			return jwtSecret, nil
+			return jwtSvc, nil
 		})
 		if err != nil || !token.Valid {
 			ctx.JSON(401, gin.H{
@@ -44,7 +43,7 @@ func JwtMiddleware() gin.HandlerFunc {
 			ctx.Abort()
 			return
 		}
-		fmt.Println("does it reach here?")
+
 		ctx.Next()
 	}
 }

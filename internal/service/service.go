@@ -7,6 +7,11 @@ import (
 	"fmt"
 )
 
+type JwtUserInfo struct {
+	ID    int
+	Email string
+}
+
 type AuthService struct {
 	repo repository.Store
 }
@@ -17,15 +22,19 @@ func NewAuthService(r repository.Store) *AuthService {
 
 func (a *AuthService) SignUp(user SignUpRequest) error {
 
-	hashed, err := helpers.HashPassword(user.Password)
-	if err != nil {
+	if err := a.repo.AlreadyExistCheck(user.Username, user.Email); err != nil {
 		return err
 	}
-
+	hashed, err := helpers.HashPassword(user.Password)
+	if err != nil {
+		return fmt.Errorf("Hashing Failed : %w", err)
+	}
 	id, err := a.repo.GenerateID()
 	if err != nil {
 		return fmt.Errorf("Failed to generate id: %w", err)
+
 	}
+
 	repoUser := repository.User{
 		ID:       id,
 		Name:     user.Name,
@@ -34,23 +43,23 @@ func (a *AuthService) SignUp(user SignUpRequest) error {
 		Password: hashed,
 	}
 	if err := a.repo.Create(repoUser); err != nil {
-		return err
+		return fmt.Errorf("Creating Failed: %w", err)
 	}
-
 	return nil
 
 }
 
-func (a *AuthService) Login(userLog LoginRequest) (int, error) {
+func (a *AuthService) Login(userLog LoginRequest) (JwtUserInfo, error) {
 	InUser, err := a.repo.GetUserByUsername(userLog.Username)
 	if err != nil {
-		return 0, fmt.Errorf("Failed to filter by Username! :%w", err)
+		return JwtUserInfo{}, fmt.Errorf("This user doesn't exist! :%w", err)
 	}
-	fmt.Println(userLog.Password)
-	fmt.Println(InUser.Password)
 	if !helpers.CheckPassword(userLog.Password, InUser.Password) {
-		return 0, errors.New("Wrong password!")
+		return JwtUserInfo{}, errors.New("Wrong password!")
 	}
-
-	return InUser.ID, nil
+	jwtStr := JwtUserInfo{
+		ID:    InUser.ID,
+		Email: InUser.Email,
+	}
+	return jwtStr, nil
 }

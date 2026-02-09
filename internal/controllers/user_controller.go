@@ -22,10 +22,11 @@ type LoginControl struct {
 }
 type Controller struct {
 	svc *service.AuthService
+	jwt *service.JwtService
 }
 
-func NewController(svc *service.AuthService) *Controller {
-	return &Controller{svc: svc}
+func NewController(svc *service.AuthService, jwt *service.JwtService) *Controller {
+	return &Controller{svc: svc, jwt: jwt}
 }
 
 var validate = validator.New()
@@ -37,14 +38,15 @@ func (c *Controller) SignUpGin(authService *service.AuthService) gin.HandlerFunc
 		err := ctx.ShouldBindJSON(&body)
 		if err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{
-				"error":   err,
+				"error":   err.Error(),
 				"message": "Invalid Request",
 			})
 			return
 		}
+
 		if err := validate.Struct(body); err != nil {
 			ctx.JSON(400, gin.H{
-				"error":   err,
+				"error":   err.Error(),
 				"message": "All fields must be filled!",
 			})
 			return
@@ -53,13 +55,14 @@ func (c *Controller) SignUpGin(authService *service.AuthService) gin.HandlerFunc
 			ID:       body.ID,
 			Name:     body.Name,
 			Username: body.Username,
+			Email:    body.Email,
 			Password: body.Password,
 		}
 
 		err = c.svc.SignUp(SReq)
 		if err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{
-				"error":   err,
+				"error":   err.Error(),
 				"message": "Sign up failed",
 			})
 			return
@@ -78,14 +81,14 @@ func (c *Controller) LoginGin(authService *service.AuthService) gin.HandlerFunc 
 		var body LoginControl
 		if err := ctx.ShouldBindJSON(&body); err != nil {
 			ctx.JSON(400, gin.H{
-				"error":   err,
+				"error":   err.Error(),
 				"message": "Invalid request body",
 			})
 			return
 		}
 		if err := validate.Struct(body); err != nil {
 			ctx.JSON(400, gin.H{
-				"error":   err,
+				"error":   err.Error(),
 				"message": "validation failed, username and password are required!",
 			})
 			return
@@ -94,17 +97,20 @@ func (c *Controller) LoginGin(authService *service.AuthService) gin.HandlerFunc 
 			Username: body.Username,
 			Password: body.Password,
 		}
-		userId, err := authService.Login(SLogReq)
-		
+		userInfo, err := authService.Login(SLogReq)
+
 		if err != nil {
 			ctx.JSON(401, gin.H{
-				"error":   err,
+				"error":   err.Error(),
 				"message": "wrong username or password",
 			})
 			return
 		}
-
-		tokenString, err := service.GenerateToken(userId)
+		jwtClaim := service.UserClaim{
+			ID:    userInfo.ID,
+			Email: userInfo.Email,
+		}
+		tokenString, err := c.jwt.GenerateToken(jwtClaim)
 		if err != nil {
 			return
 		}

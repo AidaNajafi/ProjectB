@@ -4,13 +4,14 @@ import (
 	"encoding/csv"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strconv"
 	"strings"
 	"sync"
 )
 
-type CsvRepository struct {
+type Repository struct {
 	mu       sync.Mutex
 	filePath string
 }
@@ -23,42 +24,40 @@ type User struct {
 	Password string
 }
 
-func NewCSVRepo(path string) *CsvRepository {
-	return &CsvRepository{
+func NewRepo(path string) *Repository {
+	return &Repository{
 		filePath: path,
 	}
 }
 
-func (r *CsvRepository) Init() error {
-	_, err := os.Stat(r.filePath)
-	if os.IsNotExist(err) {
-		file, err := os.Create(r.filePath)
-		if err != nil {
-			return errors.New("File Doesn't exist and cannot be created!")
+func (r *Repository) Init() error {
+	file, err := os.OpenFile(r.filePath, os.O_CREATE|os.O_WRONLY|os.O_EXCL, 0644)
+	if err != nil {
+		if os.IsExist(err) {
+			return nil
 		}
-		defer file.Close()
-		writer := csv.NewWriter(file)
-		defer writer.Flush()
-		return writer.Write([]string{
-			"id",
-			"name",
-			"username",
-			"email",
-			"password_hash",
-		})
+		return err
 	}
-	return nil
-
+	defer file.Close()
+	writer := csv.NewWriter(file)
+	if err := writer.Write([]string{"id",
+		"name",
+		"username",
+		"email",
+		"password_hash"}); err != nil {
+		return err
+	}
+	writer.Flush()
+	return writer.Error()
 }
 
-func (r *CsvRepository) Create(user User) error {
+func (r *Repository) Create(user User) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	file, err := os.OpenFile(r.filePath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		return fmt.Errorf("Failed to open file: %w", err)
 	}
-
 	defer file.Close()
 	writer := csv.NewWriter(file)
 	defer writer.Flush()
@@ -69,35 +68,43 @@ func (r *CsvRepository) Create(user User) error {
 		user.Email,
 		user.Password,
 	}
-
 	return writer.Write(record)
 }
 
-func (r *CsvRepository) GenerateID() (int, error) {
+func (r *Repository) GenerateID() (int, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	file, err := os.Open(r.filePath)
 	if err != nil {
-		return 1, fmt.Errorf("Failed to open file: %w", err)
+		return 1, nil
 	}
 	defer file.Close()
 	reader := csv.NewReader(file)
-	record, err := reader.ReadAll()
-	if err != nil {
-		return 0, fmt.Errorf("Failed to read csv file!: %w", err)
+	lastID := 0
+	lineCount := 0
+	for {
+		record, err := reader.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return 0, err
+		}
+		lineCount++
+		if lineCount == 1 {
+			continue
+		}
+		if id, err := strconv.Atoi(record[0]); err == nil {
+			lastID = id
+		}
 	}
-	if len(record) <= 1 {
-		return 0, errors.New("File is empty!")
+	if lastID == 0 {
+		return 1, nil
 	}
-	lastRow := record[len(record)-1]
-	id, erri := strconv.Atoi(lastRow[0])
-	if erri != nil {
-		return 0, erri
-	}
-	return id + 1, nil
+	return lastID + 1, nil
 }
 
-func (r *CsvRepository) ReadAll() ([]User, error) {
+func (r *Repository) ReadAll() ([]User, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	file, err := os.Open(r.filePath)
@@ -111,7 +118,10 @@ func (r *CsvRepository) ReadAll() ([]User, error) {
 		return nil, fmt.Errorf("Failed to read file path: %w", err)
 	}
 	var users []User
-	for _, rec := range records {
+	for i, rec := range records {
+		if i == 0 {
+			continue
+		}
 		if len(rec) < 5 {
 			continue
 		}
@@ -131,7 +141,7 @@ func (r *CsvRepository) ReadAll() ([]User, error) {
 	return users, nil
 }
 
-func (r *CsvRepository) GetUserByUsername(username string) (*User, error) {
+func (r *Repository) GetUserByUsername(username string) (*User, error) {
 	users, err := r.ReadAll()
 	if err != nil {
 		return &User{}, fmt.Errorf("Failed to read path: %w", err)
@@ -147,4 +157,19 @@ func (r *CsvRepository) GetUserByUsername(username string) (*User, error) {
 
 	}
 	return &User{}, errors.New("User not found!")
+}
+
+func (r *Repository) AlreadyExistCheck(username, email string) error {
+
+	users, err := r.ReadAll()
+	if err != nil {
+		return fmt.Errorf("Failed to read file: %w", err)
+	}
+	for _, u := range users {
+		if strings.TrimSpace(username) == strings.TrimSpace(u.Username) || strings.TrimSpace(email) == strings.TrimSpace(u.Email) {
+
+			return fmt.Errorf("user already exists : %s", username)
+		}
+	}
+	return nil
 }
