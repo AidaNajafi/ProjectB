@@ -1,3 +1,4 @@
 id,name,username,email,password_hash
 1,Aida,aida123,aida@example.com,$2a$10$VmbI32.wZeGtHoiBQVNGdOEIGrK3cbqe33TYAQposUNAOWAsZD4Du
 2,Mobina,mobina123,mobina@example.com,$2a$10$Yz7SwFG9mosOQ0LODCcVk.iyrz2LsnQyM3LUucHUPFREJFMyMv9vK
+3,Farnaz,farnaz123,farnaz@example.com,$2a$10$ce2jBAWDLFLONPKXzXyH.OyrgRpa2kZWmyTSevdMhdb.h9TQ1XjXC

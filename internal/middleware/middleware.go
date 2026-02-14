@@ -27,6 +27,11 @@ func LoggerMiddleware() gin.HandlerFunc {
 		}
 		ctx.Set("request_id", requestID)
 		ctx.Writer.Header().Set("X-Request-ID", requestID)
+
+		ctx.Set("logf", func(format string, args ...any) {
+			log.Printf("authentication RequestID=%s"+format, append([]any{requestID}, args...)...)
+		})
+
 		start := time.Now()
 		ctx.Next()
 		latency := time.Since(start)

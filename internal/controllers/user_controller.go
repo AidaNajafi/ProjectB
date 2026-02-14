@@ -32,22 +32,32 @@ func NewController(svc *service.AuthService, jwt *service.JwtService) *Controlle
 
 var validate = validator.New()
 
+func logf(ctx *gin.Context, format string, args ...any) {
+	if v, ok := ctx.Get("logf"); ok {
+		if f, ok := v.(func(string, ...any)); ok {
+			f(format, args...)
+			return
+		}
+	}
+	log.Printf("[authentication]"+format, args...)
+}
+
 func (c *Controller) SignUpGin(authService *service.AuthService) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 
 		var body SignUpControl
 		err := ctx.ShouldBindJSON(&body)
 		if err != nil {
+			logf(ctx, "signup bind error: %v", err)
 			ctx.JSON(http.StatusBadRequest, gin.H{
-				"error":   err.Error(),
 				"message": "Invalid Request",
 			})
 			return
 		}
 
 		if err := validate.Struct(body); err != nil {
+			logf(ctx, "field validation error: %v", err)
 			ctx.JSON(400, gin.H{
-				"error":   err.Error(),
 				"message": "All fields must be filled!",
 			})
 			return
@@ -69,8 +79,8 @@ func (c *Controller) SignUpGin(authService *service.AuthService) gin.HandlerFunc
 
 		err = c.svc.SignUp(SReq)
 		if err != nil {
+			logf(ctx, "signup logic failed: %v", err)
 			ctx.JSON(http.StatusBadRequest, gin.H{
-				"error":   err.Error(),
 				"message": "Sign up failed",
 			})
 			return
@@ -88,15 +98,15 @@ func (c *Controller) LoginGin(authService *service.AuthService) gin.HandlerFunc 
 
 		var body LoginControl
 		if err := ctx.ShouldBindJSON(&body); err != nil {
+			logf(ctx, "login bind failed: %v", err)
 			ctx.JSON(400, gin.H{
-				"error":   err.Error(),
 				"message": "Invalid request body",
 			})
 			return
 		}
 		if err := validate.Struct(body); err != nil {
+			logf(ctx, "login field validation failed: %v", err)
 			ctx.JSON(400, gin.H{
-				"error":   err.Error(),
 				"message": "validation failed, username and password are required!",
 			})
 			return
@@ -108,8 +118,8 @@ func (c *Controller) LoginGin(authService *service.AuthService) gin.HandlerFunc 
 		userInfo, err := authService.Login(SLogReq)
 
 		if err != nil {
+			logf(ctx, "login logic failed: %v", err)
 			ctx.JSON(401, gin.H{
-				"error":   err.Error(),
 				"message": "wrong username or password",
 			})
 			return
@@ -120,7 +130,7 @@ func (c *Controller) LoginGin(authService *service.AuthService) gin.HandlerFunc 
 		}
 		tokenString, err := c.jwt.GenerateToken(jwtClaim)
 		if err != nil {
-			log.Printf("login error: %s", err)
+			logf(ctx, "generate token failed: %v", err)
 			ctx.JSON(http.StatusBadRequest, gin.H{
 				"message": "something wrong!",
 			})
