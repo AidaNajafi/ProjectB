@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"authentication/internal/service"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -51,6 +52,13 @@ func (c *Controller) SignUpGin(authService *service.AuthService) gin.HandlerFunc
 			})
 			return
 		}
+		if len(body.Password) < 8 {
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"message": "password must be longer than 8 characters!",
+			})
+			return
+		}
+
 		SReq := service.SignUpRequest{
 			ID:       body.ID,
 			Name:     body.Name,
@@ -112,9 +120,12 @@ func (c *Controller) LoginGin(authService *service.AuthService) gin.HandlerFunc 
 		}
 		tokenString, err := c.jwt.GenerateToken(jwtClaim)
 		if err != nil {
+			log.Printf("login error: %s", err)
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"message": "something wrong!",
+			})
 			return
 		}
-
 		ctx.JSON(http.StatusAccepted, gin.H{
 			"message": "login successful",
 			"user":    body.Username,

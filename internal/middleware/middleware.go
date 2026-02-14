@@ -11,16 +11,38 @@ import (
 	"github.com/google/uuid"
 )
 
+type logLevel string
+
+var (
+	Info  logLevel = "INFO"
+	Warn  logLevel = "WARN"
+	Error logLevel = "ERROR"
+)
+
 func LoggerMiddleware() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
+		requestID := ctx.GetHeader("X-Request-ID")
+		if requestID == "" {
+			requestID = uuid.NewString()
+		}
+		ctx.Set("request_id", requestID)
+		ctx.Writer.Header().Set("X-Request-ID", requestID)
 		start := time.Now()
-		requestID := uuid.New().String()
-		ctx.Set("requestID", requestID)
 		ctx.Next()
 		latency := time.Since(start)
 		status := ctx.Writer.Status()
-		endpoint := ctx.Request.Method + " " + ctx.FullPath()
-		log.Printf("[%s], RequestID: %s, latency: %s, status: %d, endpoint: %s", time.Now().Format(time.RFC3339), requestID, latency, status, endpoint)
+		endpoint := ctx.FullPath()
+		var level logLevel
+		switch {
+		case status >= 500:
+			level = Error
+		case status >= 400:
+			level = Warn
+		default:
+			level = Info
+		}
+
+		log.Printf("[%s] time=%s, RequestID: %s, latency: %s, status: %d, endpoint: %s", level, time.Now().Format(time.RFC3339), requestID, latency, status, endpoint)
 	}
 }
 

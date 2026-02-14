@@ -20,15 +20,16 @@ type UserClaim struct {
 }
 
 func (j *JwtService) GenerateToken(claim UserClaim) (string, error) {
+
 	claims := jwt.MapClaims{
 		"user_id": claim.ID,
 		"exp":     time.Now().Add(72 * time.Hour).Unix(),
 	}
-
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString(claim.ID)
+	tokenString, err := token.SignedString(j.jwtSecret)
 	if err != nil {
 		return "", err
 	}
+
 	return tokenString, nil
 }
