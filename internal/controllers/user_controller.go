@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"authentication/internal/service"
+	"fmt"
 	"log"
 	"net/http"
 
@@ -25,7 +26,7 @@ type SignUpControl struct {
 	ID       int    `json:"id"`
 	Name     string `json:"name" validate:"required"`
 	Username string `json:"username" validate:"required"`
-	Email    string `json:"email" validate:"required"`
+	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required"`
 }
 
@@ -41,12 +42,16 @@ func (c *Controller) SignUp() gin.HandlerFunc {
 			})
 			return
 		}
-
+		var errMsg string
 		if err := c.validate.Struct(body); err != nil {
 			logf(ctx, "field validation error: %v", err)
+			if ValidationErrors, ok := err.(validator.ValidationErrors); ok {
+				for _, e := range ValidationErrors {
+					errMsg = getValidationErrorMessage(e)
+				}
+			}
 			ctx.JSON(400, gin.H{
-				"error":   err.Error(),
-				"message": "All fields must be filled!",
+				"error": errMsg,
 			})
 			return
 		}
@@ -139,4 +144,15 @@ func logf(ctx *gin.Context, format string, args ...any) {
 		}
 	}
 	log.Printf("[authentication]"+format, args...)
+}
+
+func getValidationErrorMessage(v validator.FieldError) string {
+	switch v.Tag() {
+	case "required":
+		return fmt.Sprintf("%s field must not be empty", v.Field())
+	case "email":
+		return fmt.Sprintf("%s must be a valid email address", v.Field())
+	default:
+		return fmt.Sprintf("%s field must not be empty", v.Field())
+	}
 }
