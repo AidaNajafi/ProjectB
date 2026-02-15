@@ -39,10 +39,8 @@ func LoggerMiddleware() gin.HandlerFunc {
 		endpoint := ctx.FullPath()
 		var level logLevel
 		switch {
-		case status >= 500:
-			level = Error
 		case status >= 400:
-			level = Warn
+			level = Error
 		default:
 			level = Info
 		}

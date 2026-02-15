@@ -31,14 +31,17 @@ func NewRepo(path string) *Repository {
 }
 
 func (r *Repository) Init() error {
-	file, err := os.OpenFile(r.filePath, os.O_CREATE|os.O_WRONLY|os.O_EXCL, 0644)
+
+	file, err := os.OpenFile(r.filePath, os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		if os.IsExist(err) {
 			return nil
 		}
-		return err
+		return fmt.Errorf("Failed to open file: %w", err)
 	}
+
 	defer file.Close()
+
 	writer := csv.NewWriter(file)
 	if err := writer.Write([]string{"id",
 		"name",

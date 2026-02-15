@@ -2,22 +2,21 @@ package server
 
 import (
 	"authentication/internal/controllers"
-	"authentication/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
 
 type Server struct {
-	srv *controllers.Controller
+	ctrl *controllers.Controller
 }
 
-func NewServer(srv *controllers.Controller) *Server {
-	return &Server{srv: srv}
+func NewServer(ctrl *controllers.Controller) *Server {
+	return &Server{ctrl: ctrl}
 }
 
-func (s *Server) SetUpRoutes(authService *service.AuthService) *gin.Engine {
+func (s *Server) SetUpRoutes() *gin.Engine {
 	router := gin.Default()
-	router.POST("/signup", s.srv.SignUpGin(authService))
-	router.POST("/login", s.srv.LoginGin(authService))
+	router.POST("/signup", s.ctrl.SignUp())
+	router.POST("/login", s.ctrl.Login())
 	return router
 }

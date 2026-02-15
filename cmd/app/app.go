@@ -8,30 +8,36 @@ import (
 	"authentication/internal/service"
 	"fmt"
 	"log"
-	"os"
+
+	"github.com/go-playground/validator/v10"
 )
 
 type App struct {
 	app *server.Server
 }
 
-func AppStart(flags []string) error {
-	jwtV := []byte(os.Getenv("JWT_SECRET"))
-	jwtSec := service.NewJwtService(jwtV)
-	cfg, err := config.LoadConfig(flags)
+func AppStart() error {
+
+	cfg, err := config.LoadConfig("../config.yaml")
 	if err != nil {
-		return fmt.Errorf("loadConfig failed: %w", err)
+		return fmt.Errorf("loading config failed: %w", err)
 	}
-	addr := fmt.Sprintf(":%d", cfg.Port)
+
 	repo := repository.NewRepo(cfg.FilePath)
 	if err := repo.Init(); err != nil {
 		return fmt.Errorf("Header creation failed: %w", err)
 	}
-	svc := service.NewAuthService(repo)
-	srv := controllers.NewController(svc, jwtSec)
-	newS := server.NewServer(srv)
+	jwtToken := service.NewJwtService([]byte(cfg.SecretKey))
+	svc := service.NewAuthService(repo, jwtToken)
+
+	validator := validator.New()
+	ctrl := controllers.NewController(svc, validator)
+	newS := server.NewServer(ctrl)
+
+	router := newS.SetUpRoutes()
+
+	addr := fmt.Sprintf(":%d", cfg.Port)
 	log.Printf("Starting server on port: %s", addr)
-	router := newS.SetUpRoutes(svc)
 	return router.Run(addr)
 
 }

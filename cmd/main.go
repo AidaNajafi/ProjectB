@@ -1,14 +1,14 @@
 package main
 
 import (
-	"authentication/internal/app"
+	"authentication/cmd/app"
 	"fmt"
 	"os"
 )
 
 func main() {
-	flags := os.Args[1:]
-	if err := app.AppStart(flags); err != nil {
+	if err := app.AppStart(); err != nil {
+		fmt.Println(err)
 		fmt.Println("Failed to run server!")
 		os.Exit(1)
 	}

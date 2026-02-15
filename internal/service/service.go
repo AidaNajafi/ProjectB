@@ -7,17 +7,13 @@ import (
 	"fmt"
 )
 
-type JwtUserInfo struct {
-	ID    int
-	Email string
-}
-
 type AuthService struct {
-	repo repository.Store
+	repo   repository.Store
+	jwtTok *JwtService
 }
 
-func NewAuthService(r repository.Store) *AuthService {
-	return &AuthService{repo: r}
+func NewAuthService(r repository.Store, jwtTok *JwtService) *AuthService {
+	return &AuthService{repo: r, jwtTok: jwtTok}
 }
 
 func (a *AuthService) SignUp(user SignUpRequest) error {
@@ -35,31 +31,37 @@ func (a *AuthService) SignUp(user SignUpRequest) error {
 
 	}
 
-	repoUser := repository.User{
+	if err := a.repo.Create(repository.User{
 		ID:       id,
 		Name:     user.Name,
 		Username: user.Username,
 		Email:    user.Email,
 		Password: hashed,
-	}
-	if err := a.repo.Create(repoUser); err != nil {
+	}); err != nil {
 		return fmt.Errorf("Creating Failed: %w", err)
 	}
 	return nil
 
 }
 
-func (a *AuthService) Login(userLog LoginRequest) (JwtUserInfo, error) {
+type JwtUserInfo struct {
+	ID    int
+	Email string
+}
+
+func (a *AuthService) Login(userLog LoginRequest) (string, error) {
 	InUser, err := a.repo.GetUserByUsername(userLog.Username)
 	if err != nil {
-		return JwtUserInfo{}, fmt.Errorf("This user doesn't exist! :%w", err)
+		return "", fmt.Errorf("This user doesn't exist! :%w", err)
 	}
 	if !helpers.CheckPassword(userLog.Password, InUser.Password) {
-		return JwtUserInfo{}, errors.New("Wrong password!")
+		return "", errors.New("Wrong password!")
 	}
-	jwtStr := JwtUserInfo{
+	jwtStr := UserClaim{
 		ID:    InUser.ID,
 		Email: InUser.Email,
 	}
-	return jwtStr, nil
+	jwtToken, err := a.jwtTok.GenerateToken(jwtStr)
+
+	return jwtToken, nil
 }

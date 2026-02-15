@@ -9,6 +9,18 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
+type Controller struct {
+	svc      *service.AuthService
+	validate *validator.Validate
+}
+
+func NewController(svc *service.AuthService, validator *validator.Validate) *Controller {
+	return &Controller{
+		svc:      svc,
+		validate: validator,
+	}
+}
+
 type SignUpControl struct {
 	ID       int    `json:"id"`
 	Name     string `json:"name" validate:"required"`
@@ -17,32 +29,7 @@ type SignUpControl struct {
 	Password string `json:"password" validate:"required"`
 }
 
-type LoginControl struct {
-	Username string `json:"username" validate:"required"`
-	Password string `json:"password" validate:"required"`
-}
-type Controller struct {
-	svc *service.AuthService
-	jwt *service.JwtService
-}
-
-func NewController(svc *service.AuthService, jwt *service.JwtService) *Controller {
-	return &Controller{svc: svc, jwt: jwt}
-}
-
-var validate = validator.New()
-
-func logf(ctx *gin.Context, format string, args ...any) {
-	if v, ok := ctx.Get("logf"); ok {
-		if f, ok := v.(func(string, ...any)); ok {
-			f(format, args...)
-			return
-		}
-	}
-	log.Printf("[authentication]"+format, args...)
-}
-
-func (c *Controller) SignUpGin(authService *service.AuthService) gin.HandlerFunc {
+func (c *Controller) SignUp() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 
 		var body SignUpControl
@@ -55,9 +42,10 @@ func (c *Controller) SignUpGin(authService *service.AuthService) gin.HandlerFunc
 			return
 		}
 
-		if err := validate.Struct(body); err != nil {
+		if err := c.validate.Struct(body); err != nil {
 			logf(ctx, "field validation error: %v", err)
 			ctx.JSON(400, gin.H{
+				"error":   err.Error(),
 				"message": "All fields must be filled!",
 			})
 			return
@@ -93,7 +81,12 @@ func (c *Controller) SignUpGin(authService *service.AuthService) gin.HandlerFunc
 	}
 }
 
-func (c *Controller) LoginGin(authService *service.AuthService) gin.HandlerFunc {
+type LoginControl struct {
+	Username string `json:"username" validate:"required"`
+	Password string `json:"password" validate:"required"`
+}
+
+func (c *Controller) Login() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 
 		var body LoginControl
@@ -104,19 +97,18 @@ func (c *Controller) LoginGin(authService *service.AuthService) gin.HandlerFunc 
 			})
 			return
 		}
-		if err := validate.Struct(body); err != nil {
+		if err := c.validate.Struct(body); err != nil {
 			logf(ctx, "login field validation failed: %v", err)
 			ctx.JSON(400, gin.H{
 				"message": "validation failed, username and password are required!",
 			})
 			return
 		}
-		SLogReq := service.LoginRequest{
+
+		tokenString, err := c.svc.Login(service.LoginRequest{
 			Username: body.Username,
 			Password: body.Password,
-		}
-		userInfo, err := authService.Login(SLogReq)
-
+		})
 		if err != nil {
 			logf(ctx, "login logic failed: %v", err)
 			ctx.JSON(401, gin.H{
@@ -124,11 +116,6 @@ func (c *Controller) LoginGin(authService *service.AuthService) gin.HandlerFunc 
 			})
 			return
 		}
-		jwtClaim := service.UserClaim{
-			ID:    userInfo.ID,
-			Email: userInfo.Email,
-		}
-		tokenString, err := c.jwt.GenerateToken(jwtClaim)
 		if err != nil {
 			logf(ctx, "generate token failed: %v", err)
 			ctx.JSON(http.StatusBadRequest, gin.H{
@@ -142,4 +129,14 @@ func (c *Controller) LoginGin(authService *service.AuthService) gin.HandlerFunc 
 			"token":   tokenString,
 		})
 	}
+}
+
+func logf(ctx *gin.Context, format string, args ...any) {
+	if v, ok := ctx.Get("logf"); ok {
+		if f, ok := v.(func(string, ...any)); ok {
+			f(format, args...)
+			return
+		}
+	}
+	log.Printf("[authentication]"+format, args...)
 }
