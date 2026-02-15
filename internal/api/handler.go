@@ -9,34 +9,34 @@ import (
 	"time"
 )
 
-type SHandler struct {
-	srv *service.FSolution
+type Handler struct {
+	srv *service.ServiceFlightSolution
 }
 
-func NewHandler(srv *service.FSolution) *SHandler {
-	return &SHandler{srv: srv}
+func NewHandler(srv *service.ServiceFlightSolution) *Handler {
+	return &Handler{srv: srv}
 }
 
-type InInfo struct {
+type HandlerFlightSolutionQuery struct {
 	Origin        string    `json:"origin"`
 	Dest          string    `json:"dest"`
 	DepartureDate time.Time `json:"departuredate"`
 }
 
-type OutInfo struct {
+type HandlerFlightSolution struct {
 	AirlineCode string `json:"airlinecode"`
 	Price       int64  `json:"price"`
 	FareClass   string `json:"fareclass"`
 	Aircraft    string `json:"aircraft"`
 }
 
-func (s *SHandler) FlightHandler() http.Handler {
+func (s *Handler) FlightHandler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/flight-lists", s.GetFlights)
 	return mux
 }
 
-func (s *SHandler) GetFlights(w http.ResponseWriter, r *http.Request) {
+func (s *Handler) GetFlights(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		WriteJSON(w, http.StatusMethodNotAllowed, map[string]string{
 			"error": "method not allowed",
@@ -44,7 +44,7 @@ func (s *SHandler) GetFlights(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ctx := r.Context()
-	var body InInfo
+	var body HandlerFlightSolutionQuery
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		WriteJSON(w, http.StatusBadRequest, map[string]string{
 			"error": "failed to decode input",
@@ -57,12 +57,12 @@ func (s *SHandler) GetFlights(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	info := service.PassengerInfo{
+	info := service.FlightSolutionQuery{
 		Origin:        body.Origin,
 		Dest:          body.Dest,
 		DepartureDate: body.DepartureDate,
 	}
-	FlightList, err := s.srv.GetFlightList(ctx, info)
+	FlightList, err := s.srv.GetAggregateFlights(ctx, info)
 	if err != nil {
 		status := http.StatusBadGateway
 		if errors.Is(err, context.DeadlineExceeded) {
@@ -71,9 +71,9 @@ func (s *SHandler) GetFlights(w http.ResponseWriter, r *http.Request) {
 		WriteJSON(w, status, err.Error())
 		return
 	}
-	output := make([]OutInfo, 0, len(FlightList))
+	output := make([]HandlerFlightSolution, 0, len(FlightList))
 	for _, f := range FlightList {
-		output = append(output, OutInfo{
+		output = append(output, HandlerFlightSolution{
 			AirlineCode: f.AirlineCode,
 			Price:       f.Price,
 			FareClass:   f.FareClass,
