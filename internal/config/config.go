@@ -26,7 +26,7 @@ func LoadConfig(filepath string) (Config, error) {
 	if err := decoder.Decode(&cfg); err != nil {
 		return Config{}, fmt.Errorf("Failed to decode file :%w", err)
 	}
-	err = godotenv.Load("../my.env")
+	err = godotenv.Load("./my.env")
 	if err != nil {
 		return Config{}, fmt.Errorf("Error loading .env file: %w", err)
 	}

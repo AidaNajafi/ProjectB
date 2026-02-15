@@ -18,7 +18,7 @@ type App struct {
 
 func AppStart() error {
 
-	cfg, err := config.LoadConfig("../config.yaml")
+	cfg, err := config.LoadConfig("./config.yaml")
 	if err != nil {
 		return fmt.Errorf("loading config failed: %w", err)
 	}
