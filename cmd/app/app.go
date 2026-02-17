@@ -3,6 +3,7 @@ package app
 import (
 	"authentication/internal/config"
 	"authentication/internal/controllers"
+	"authentication/internal/db"
 	"authentication/internal/repository"
 	"authentication/internal/server"
 	"authentication/internal/service"
@@ -17,16 +18,18 @@ type App struct {
 }
 
 func AppStart() error {
-
-	cfg, err := config.LoadConfig("./config.yaml")
+	cfg, err := config.LoadConfig()
 	if err != nil {
-		return fmt.Errorf("loading config failed: %w", err)
+		return fmt.Errorf("Failed to load config: %w", err)
 	}
 
-	repo := repository.NewRepo(cfg.FilePath)
-	if err := repo.Init(); err != nil {
-		return fmt.Errorf("Header creation failed: %w", err)
+	db, err := db.Init(cfg)
+	if err != nil {
+		return fmt.Errorf("Failed to initialize the connection pool %w", err)
 	}
+	
+	defer db.Close()
+	repo := repository.NewPostgresStore(db)
 	jwtToken := service.NewJwtService([]byte(cfg.SecretKey))
 	svc := service.NewAuthService(repo, jwtToken)
 
@@ -36,7 +39,7 @@ func AppStart() error {
 
 	router := newS.SetUpRoutes()
 
-	addr := fmt.Sprintf(":%d", cfg.Port)
+	addr := fmt.Sprintf(":%s", cfg.ServerPort)
 	log.Printf("Starting server on port: %s", addr)
 	return router.Run(addr)
 

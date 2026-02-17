@@ -16,13 +16,7 @@ type Repository struct {
 	filePath string
 }
 
-type User struct {
-	ID       int
-	Name     string
-	Username string
-	Email    string
-	Password string
-}
+
 
 func NewRepo(path string) *Repository {
 	return &Repository{
@@ -31,7 +25,6 @@ func NewRepo(path string) *Repository {
 }
 
 func (r *Repository) Init() error {
-
 	file, err := os.OpenFile(r.filePath, os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		if os.IsExist(err) {
@@ -54,7 +47,7 @@ func (r *Repository) Init() error {
 	return writer.Error()
 }
 
-func (r *Repository) Create(user User) error {
+func (r *Repository) CreateUser(user UserInfo) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	file, err := os.OpenFile(r.filePath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
@@ -107,7 +100,7 @@ func (r *Repository) GenerateID() (int, error) {
 	return lastID + 1, nil
 }
 
-func (r *Repository) ReadAll() ([]User, error) {
+func (r *Repository) ReadAll() ([]UserInfo, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	file, err := os.Open(r.filePath)
@@ -120,7 +113,7 @@ func (r *Repository) ReadAll() ([]User, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Failed to read file path: %w", err)
 	}
-	var users []User
+	var users []UserInfo
 	for i, rec := range records {
 		if i == 0 {
 			continue
@@ -132,7 +125,7 @@ func (r *Repository) ReadAll() ([]User, error) {
 		if err != nil {
 			return nil, fmt.Errorf("Failed to convert id to int: %w", err)
 		}
-		user := User{
+		user := UserInfo{
 			ID:       id,
 			Name:     rec[1],
 			Username: rec[2],
@@ -144,10 +137,10 @@ func (r *Repository) ReadAll() ([]User, error) {
 	return users, nil
 }
 
-func (r *Repository) GetUserByUsername(username string) (*User, error) {
+func (r *Repository) GetUserByUsername(username string) (*UserInfo, error) {
 	users, err := r.ReadAll()
 	if err != nil {
-		return &User{}, fmt.Errorf("Failed to read path: %w", err)
+		return &UserInfo{}, fmt.Errorf("Failed to read path: %w", err)
 	}
 	for _, u := range users {
 		if strings.TrimSpace(u.Username) == username {
@@ -159,7 +152,7 @@ func (r *Repository) GetUserByUsername(username string) (*User, error) {
 		}
 
 	}
-	return &User{}, errors.New("User not found!")
+	return &UserInfo{}, errors.New("User not found!")
 }
 
 func (r *Repository) AlreadyExistCheck(username, email string) error {

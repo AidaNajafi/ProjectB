@@ -1,10 +1,14 @@
 package repository
 
+type UserInfo struct {
+	ID       int
+	Name     string
+	Username string
+	Email    string
+	Password string
+}
+
 type Store interface {
-	Init() error
-	Create(user User) error
-	GenerateID() (int, error)
-	ReadAll() ([]User, error)
-	GetUserByUsername(username string) (*User, error)
-	AlreadyExistCheck(username, email string) error
+	CreateUser(user UserInfo) error
+	GetUserByUsername(username string) (*UserInfo, error)
 }

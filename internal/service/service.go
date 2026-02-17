@@ -3,8 +3,10 @@ package service
 import (
 	"authentication/internal/helpers"
 	"authentication/internal/repository"
+	"database/sql"
 	"errors"
 	"fmt"
+	"log"
 )
 
 type AuthService struct {
@@ -18,28 +20,30 @@ func NewAuthService(r repository.Store, jwtTok *JwtService) *AuthService {
 
 func (a *AuthService) SignUp(user SignUpRequest) error {
 
-	if err := a.repo.AlreadyExistCheck(user.Username, user.Email); err != nil {
-		return err
-	}
 	hashed, err := helpers.HashPassword(user.Password)
 	if err != nil {
 		return fmt.Errorf("Hashing Failed : %w", err)
 	}
-	id, err := a.repo.GenerateID()
-	if err != nil {
-		return fmt.Errorf("Failed to generate id: %w", err)
-
+	u, err := a.repo.GetUserByUsername(user.Username)
+	if err != nil && err != sql.ErrNoRows {
+		return fmt.Errorf("Failed to retrieve user %w", err)
 	}
-
-	if err := a.repo.Create(repository.User{
-		ID:       id,
+	if err := a.repo.CreateUser(repository.UserInfo{
+		ID:       user.ID,
 		Name:     user.Name,
 		Username: user.Username,
 		Email:    user.Email,
 		Password: hashed,
 	}); err != nil {
+
+		log.Println(err)
 		return fmt.Errorf("Creating Failed: %w", err)
 	}
+
+	if u != nil {
+		return errors.New("user already exists")
+	}
+
 	return nil
 
 }
@@ -50,16 +54,20 @@ type JwtUserInfo struct {
 }
 
 func (a *AuthService) Login(userLog LoginRequest) (string, error) {
-	InUser, err := a.repo.GetUserByUsername(userLog.Username)
+	inUser, err := a.repo.GetUserByUsername(userLog.Username)
 	if err != nil {
 		return "", fmt.Errorf("This user doesn't exist! :%w", err)
 	}
-	if !helpers.CheckPassword(userLog.Password, InUser.Password) {
+	if inUser == nil {
+		return "", fmt.Errorf("user with this username %s not found", userLog.Username)
+	}
+
+	if !helpers.CheckPassword(userLog.Password, inUser.Password) {
 		return "", errors.New("Wrong password!")
 	}
 	jwtStr := UserClaim{
-		ID:    InUser.ID,
-		Email: InUser.Email,
+		ID:    inUser.ID,
+		Email: inUser.Email,
 	}
 	jwtToken, err := a.jwtTok.GenerateToken(jwtStr)
 

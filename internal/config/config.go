@@ -4,39 +4,34 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/goccy/go-yaml"
 	"github.com/joho/godotenv"
 )
 
 type Config struct {
-	FilePath  string `yaml:"path"`
-	Port      int    `yaml:"port"`
-	SecretKey string
+	DBhost     string
+	DBport     string
+	DBuser     string
+	DBpass     string
+	DBname     string
+	DBsslmode  string
+	SecretKey  string
+	ServerPort string
 }
 
-func LoadConfig(filepath string) (Config, error) {
-	file, err := os.Open(filepath)
-	if err != nil {
-		return Config{}, fmt.Errorf("Failed to open file: %w", err)
-	}
-	defer file.Close()
+func LoadConfig() (*Config, error) {
 
-	var cfg Config
-	decoder := yaml.NewDecoder(file)
-	if err := decoder.Decode(&cfg); err != nil {
-		return Config{}, fmt.Errorf("Failed to decode file :%w", err)
-	}
-	err = godotenv.Load("./my.env")
+	err := godotenv.Load("../my.env")
 	if err != nil {
-		return Config{}, fmt.Errorf("Error loading .env file: %w", err)
+		return &Config{}, fmt.Errorf("Error loading .env file: %w", err)
 	}
-	cfg.SecretKey = os.Getenv("JWT_SECRET")
-	if cfg.SecretKey == "" {
-		return Config{}, fmt.Errorf("Failed to get secret key: %w", err)
-	}
-
-	if cfg.Port <= 0 || cfg.Port > 65535 {
-		return Config{}, fmt.Errorf("port cannot be less than zero: %d", cfg.Port)
-	}
-	return cfg, nil
+	return &Config{
+		DBhost:     os.Getenv("DATABASE_HOST"),
+		DBport:     os.Getenv("DATABASE_PORT"),
+		DBuser:     os.Getenv("DATABASE_USER"),
+		DBpass:     os.Getenv("DATABASE_PASSWORD"),
+		DBname:     os.Getenv("DATABASE_NAME"),
+		DBsslmode:  os.Getenv("DATABASE_SSLMODE"),
+		SecretKey:  os.Getenv("JWT_SECRET"),
+		ServerPort: os.Getenv("SERVER_PORT"),
+	}, nil
 }
