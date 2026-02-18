@@ -70,7 +70,14 @@ func (s *Handler) GetFlights(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	date, _ := ParseDate(body.DepartureDate)
+	date, err := ParseDate(body.DepartureDate)
+	if err != nil {
+		WriteJSON(w, 500, map[string]string{
+			"error": err.Error(),
+			"msg":   "Failed to parse date",
+		})
+		return
+	}
 	info := service.FlightSolutionQuery{
 		Origin:        body.Origin,
 		Dest:          body.Dest,
