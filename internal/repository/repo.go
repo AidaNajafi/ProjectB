@@ -25,6 +25,7 @@ func (f FlightProviderFunc) Search(ctx context.Context, departureDate time.Time,
 
 func NewFlightProvider() FlightProvider{
 	return FlightProviderFunc (func(ctx context.Context, departureDate time.Time, originIATA string, destinationIATA string) ([]FlightSolution, error){
+		time.Sleep(5 *time.Millisecond)
 		return []FlightSolution{
 			{AirlineCode: "IR", Price: 210_00, FareClass: "Y", Aircraft: "A320"},
 			{AirlineCode: "W5", Price: 195_00, FareClass: "M", Aircraft: "MD83"},

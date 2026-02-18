@@ -2,8 +2,9 @@ package service
 
 import (
 	"context"
-	"fmt"
+	"math/rand"
 	"project1/internal/repository"
+	"sync"
 	"time"
 )
 
@@ -29,21 +30,44 @@ func New(p []repository.FlightProvider) *ServiceFlightSolution {
 }
 
 func (s *ServiceFlightSolution) GetAggregateFlights(ctx context.Context, filter FlightSolutionQuery) ([]FlightSolutions, error) {
-	AggregatedFlightSolutions := make([]FlightSolutions, 0)
-	for _, provider := range s.providers {
-		flights, err := provider.Search(ctx, filter.DepartureDate, filter.Origin, filter.Dest)
-		if err != nil {
-			return nil, fmt.Errorf("Search failed!: %w", err)
-		}
-		for _, f := range flights {
-			AggregatedFlightSolutions = append(AggregatedFlightSolutions, FlightSolutions{
-				AirlineCode: f.AirlineCode,
-				Price:       f.Price,
-				FareClass:   f.FareClass,
-				Aircraft:    f.Aircraft,
-			})
+	results := make(chan []FlightSolutions)
+	var wg sync.WaitGroup
+	taskCount := 10000
+	for i := 0; i < taskCount; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			provider := s.providers[rand.Intn(len(s.providers))]
+			flights, err := provider.Search(ctx, filter.DepartureDate, filter.Origin, filter.Dest)
+			if err != nil {
+				results <- nil
+				return
+			}
+			mappedFlights := make([]FlightSolutions, len(flights))
+			for i, flight := range flights {
+				mappedFlights[i] = FlightSolutions{
+					AirlineCode: flight.AirlineCode,
+					Price:       flight.Price,
+					FareClass:   flight.FareClass,
+					Aircraft:    flight.Aircraft,
+				}
+			}
+			results <- mappedFlights
+		}(i)
+
+	}
+	go func() {
+		wg.Wait()
+		close(results)
+	}()
+
+	aggregatedFlightSolutions := make([]FlightSolutions, 0)
+	for flights := range results {
+		if flights != nil {
+			aggregatedFlightSolutions = append(aggregatedFlightSolutions, flights...)
 		}
 	}
-	return AggregatedFlightSolutions, nil
+
+	return aggregatedFlightSolutions, nil
 
 }

@@ -9,8 +9,11 @@ import (
 )
 
 func main() {
-	NewProviders := repository.NewFlightProvider()
-	providers := []repository.FlightProvider{NewProviders}
+	providersNum := 5
+	providers := make([]repository.FlightProvider, providersNum)
+	for i := 0; i < providersNum; i++ {
+		providers[i] = repository.NewFlightProvider()
+	}
 	svc := service.New(providers)
 	svr := api.NewHandler(svc)
 	log.Println("Starting server")
