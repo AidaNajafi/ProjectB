@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"grpc-project/internal/proto/invoicer"
-	"grpc-project/internal/repo"
+	repository "grpc-project/internal/repo"
 	"grpc-project/internal/service"
 	"log"
 	"net"

@@ -3,7 +3,7 @@ option  go_package = "grpc-project/invoicer";
 
 import "google/protobuf/timestamp.proto";
 
-message FlightSolutionQuery {
+message GetAggregatedFlightsRequest {
     string origin = 1;
     string dest = 2;
     google.protobuf.Timestamp departure_date = 3;
@@ -17,11 +17,11 @@ message FlightSolutions {
 	string aircraft  = 4;  
 }
 
-message FlightSolutionsList {
+message GetAggregatedFlightsResponse {
     repeated FlightSolutions solutions = 1;
 }
 
 
 service SearchFlight {
-  rpc GetAggregatedFlights(FlightSolutionQuery) returns (FlightSolutionsList);
+  rpc GetAggregatedFlights(GetAggregatedFlightsRequest) returns (GetAggregatedFlightsResponse);
 }
