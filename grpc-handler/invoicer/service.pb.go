@@ -22,7 +22,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type FlightSolutionQuery struct {
+type GetAggregatedFlightsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Origin        string                 `protobuf:"bytes,1,opt,name=origin,proto3" json:"origin,omitempty"`
 	Dest          string                 `protobuf:"bytes,2,opt,name=dest,proto3" json:"dest,omitempty"`
@@ -31,20 +31,20 @@ type FlightSolutionQuery struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *FlightSolutionQuery) Reset() {
-	*x = FlightSolutionQuery{}
+func (x *GetAggregatedFlightsRequest) Reset() {
+	*x = GetAggregatedFlightsRequest{}
 	mi := &file_service_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *FlightSolutionQuery) String() string {
+func (x *GetAggregatedFlightsRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*FlightSolutionQuery) ProtoMessage() {}
+func (*GetAggregatedFlightsRequest) ProtoMessage() {}
 
-func (x *FlightSolutionQuery) ProtoReflect() protoreflect.Message {
+func (x *GetAggregatedFlightsRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_service_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -56,26 +56,26 @@ func (x *FlightSolutionQuery) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use FlightSolutionQuery.ProtoReflect.Descriptor instead.
-func (*FlightSolutionQuery) Descriptor() ([]byte, []int) {
+// Deprecated: Use GetAggregatedFlightsRequest.ProtoReflect.Descriptor instead.
+func (*GetAggregatedFlightsRequest) Descriptor() ([]byte, []int) {
 	return file_service_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *FlightSolutionQuery) GetOrigin() string {
+func (x *GetAggregatedFlightsRequest) GetOrigin() string {
 	if x != nil {
 		return x.Origin
 	}
 	return ""
 }
 
-func (x *FlightSolutionQuery) GetDest() string {
+func (x *GetAggregatedFlightsRequest) GetDest() string {
 	if x != nil {
 		return x.Dest
 	}
 	return ""
 }
 
-func (x *FlightSolutionQuery) GetDepartureDate() *timestamppb.Timestamp {
+func (x *GetAggregatedFlightsRequest) GetDepartureDate() *timestamppb.Timestamp {
 	if x != nil {
 		return x.DepartureDate
 	}
@@ -150,27 +150,27 @@ func (x *FlightSolutions) GetAircraft() string {
 	return ""
 }
 
-type FlightSolutionsList struct {
+type GetAggregatedFlightsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Solutions     []*FlightSolutions     `protobuf:"bytes,1,rep,name=solutions,proto3" json:"solutions,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *FlightSolutionsList) Reset() {
-	*x = FlightSolutionsList{}
+func (x *GetAggregatedFlightsResponse) Reset() {
+	*x = GetAggregatedFlightsResponse{}
 	mi := &file_service_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *FlightSolutionsList) String() string {
+func (x *GetAggregatedFlightsResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*FlightSolutionsList) ProtoMessage() {}
+func (*GetAggregatedFlightsResponse) ProtoMessage() {}
 
-func (x *FlightSolutionsList) ProtoReflect() protoreflect.Message {
+func (x *GetAggregatedFlightsResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_service_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -182,12 +182,12 @@ func (x *FlightSolutionsList) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use FlightSolutionsList.ProtoReflect.Descriptor instead.
-func (*FlightSolutionsList) Descriptor() ([]byte, []int) {
+// Deprecated: Use GetAggregatedFlightsResponse.ProtoReflect.Descriptor instead.
+func (*GetAggregatedFlightsResponse) Descriptor() ([]byte, []int) {
 	return file_service_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *FlightSolutionsList) GetSolutions() []*FlightSolutions {
+func (x *GetAggregatedFlightsResponse) GetSolutions() []*FlightSolutions {
 	if x != nil {
 		return x.Solutions
 	}
@@ -198,8 +198,8 @@ var File_service_proto protoreflect.FileDescriptor
 
 const file_service_proto_rawDesc = "" +
 	"\n" +
-	"\rservice.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\x84\x01\n" +
-	"\x13FlightSolutionQuery\x12\x16\n" +
+	"\rservice.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\x8c\x01\n" +
+	"\x1bGetAggregatedFlightsRequest\x12\x16\n" +
 	"\x06origin\x18\x01 \x01(\tR\x06origin\x12\x12\n" +
 	"\x04dest\x18\x02 \x01(\tR\x04dest\x12A\n" +
 	"\x0edeparture_date\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\rdepartureDate\"\x85\x01\n" +
@@ -208,11 +208,11 @@ const file_service_proto_rawDesc = "" +
 	"\x05price\x18\x02 \x01(\x03R\x05price\x12\x1d\n" +
 	"\n" +
 	"fare_class\x18\x03 \x01(\tR\tfareClass\x12\x1a\n" +
-	"\baircraft\x18\x04 \x01(\tR\baircraft\"E\n" +
-	"\x13FlightSolutionsList\x12.\n" +
-	"\tsolutions\x18\x01 \x03(\v2\x10.FlightSolutionsR\tsolutions2R\n" +
-	"\fSearchFlight\x12B\n" +
-	"\x14GetAggregatedFlights\x12\x14.FlightSolutionQuery\x1a\x14.FlightSolutionsListB\x17Z\x15grpc-project/invoicerb\x06proto3"
+	"\baircraft\x18\x04 \x01(\tR\baircraft\"N\n" +
+	"\x1cGetAggregatedFlightsResponse\x12.\n" +
+	"\tsolutions\x18\x01 \x03(\v2\x10.FlightSolutionsR\tsolutions2c\n" +
+	"\fSearchFlight\x12S\n" +
+	"\x14GetAggregatedFlights\x12\x1c.GetAggregatedFlightsRequest\x1a\x1d.GetAggregatedFlightsResponseB\x17Z\x15grpc-project/invoicerb\x06proto3"
 
 var (
 	file_service_proto_rawDescOnce sync.Once
@@ -228,16 +228,16 @@ func file_service_proto_rawDescGZIP() []byte {
 
 var file_service_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_service_proto_goTypes = []any{
-	(*FlightSolutionQuery)(nil),   // 0: FlightSolutionQuery
-	(*FlightSolutions)(nil),       // 1: FlightSolutions
-	(*FlightSolutionsList)(nil),   // 2: FlightSolutionsList
-	(*timestamppb.Timestamp)(nil), // 3: google.protobuf.Timestamp
+	(*GetAggregatedFlightsRequest)(nil),  // 0: GetAggregatedFlightsRequest
+	(*FlightSolutions)(nil),              // 1: FlightSolutions
+	(*GetAggregatedFlightsResponse)(nil), // 2: GetAggregatedFlightsResponse
+	(*timestamppb.Timestamp)(nil),        // 3: google.protobuf.Timestamp
 }
 var file_service_proto_depIdxs = []int32{
-	3, // 0: FlightSolutionQuery.departure_date:type_name -> google.protobuf.Timestamp
-	1, // 1: FlightSolutionsList.solutions:type_name -> FlightSolutions
-	0, // 2: SearchFlight.GetAggregatedFlights:input_type -> FlightSolutionQuery
-	2, // 3: SearchFlight.GetAggregatedFlights:output_type -> FlightSolutionsList
+	3, // 0: GetAggregatedFlightsRequest.departure_date:type_name -> google.protobuf.Timestamp
+	1, // 1: GetAggregatedFlightsResponse.solutions:type_name -> FlightSolutions
+	0, // 2: SearchFlight.GetAggregatedFlights:input_type -> GetAggregatedFlightsRequest
+	2, // 3: SearchFlight.GetAggregatedFlights:output_type -> GetAggregatedFlightsResponse
 	3, // [3:4] is the sub-list for method output_type
 	2, // [2:3] is the sub-list for method input_type
 	2, // [2:2] is the sub-list for extension type_name

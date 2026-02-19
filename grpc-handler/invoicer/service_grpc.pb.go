@@ -26,7 +26,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SearchFlightClient interface {
-	GetAggregatedFlights(ctx context.Context, in *FlightSolutionQuery, opts ...grpc.CallOption) (*FlightSolutionsList, error)
+	GetAggregatedFlights(ctx context.Context, in *GetAggregatedFlightsRequest, opts ...grpc.CallOption) (*GetAggregatedFlightsResponse, error)
 }
 
 type searchFlightClient struct {
@@ -37,9 +37,9 @@ func NewSearchFlightClient(cc grpc.ClientConnInterface) SearchFlightClient {
 	return &searchFlightClient{cc}
 }
 
-func (c *searchFlightClient) GetAggregatedFlights(ctx context.Context, in *FlightSolutionQuery, opts ...grpc.CallOption) (*FlightSolutionsList, error) {
+func (c *searchFlightClient) GetAggregatedFlights(ctx context.Context, in *GetAggregatedFlightsRequest, opts ...grpc.CallOption) (*GetAggregatedFlightsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(FlightSolutionsList)
+	out := new(GetAggregatedFlightsResponse)
 	err := c.cc.Invoke(ctx, SearchFlight_GetAggregatedFlights_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -51,7 +51,7 @@ func (c *searchFlightClient) GetAggregatedFlights(ctx context.Context, in *Fligh
 // All implementations must embed UnimplementedSearchFlightServer
 // for forward compatibility.
 type SearchFlightServer interface {
-	GetAggregatedFlights(context.Context, *FlightSolutionQuery) (*FlightSolutionsList, error)
+	GetAggregatedFlights(context.Context, *GetAggregatedFlightsRequest) (*GetAggregatedFlightsResponse, error)
 	mustEmbedUnimplementedSearchFlightServer()
 }
 
@@ -62,7 +62,7 @@ type SearchFlightServer interface {
 // pointer dereference when methods are called.
 type UnimplementedSearchFlightServer struct{}
 
-func (UnimplementedSearchFlightServer) GetAggregatedFlights(context.Context, *FlightSolutionQuery) (*FlightSolutionsList, error) {
+func (UnimplementedSearchFlightServer) GetAggregatedFlights(context.Context, *GetAggregatedFlightsRequest) (*GetAggregatedFlightsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetAggregatedFlights not implemented")
 }
 func (UnimplementedSearchFlightServer) mustEmbedUnimplementedSearchFlightServer() {}
@@ -87,7 +87,7 @@ func RegisterSearchFlightServer(s grpc.ServiceRegistrar, srv SearchFlightServer)
 }
 
 func _SearchFlight_GetAggregatedFlights_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(FlightSolutionQuery)
+	in := new(GetAggregatedFlightsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -99,7 +99,7 @@ func _SearchFlight_GetAggregatedFlights_Handler(srv interface{}, ctx context.Con
 		FullMethod: SearchFlight_GetAggregatedFlights_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SearchFlightServer).GetAggregatedFlights(ctx, req.(*FlightSolutionQuery))
+		return srv.(SearchFlightServer).GetAggregatedFlights(ctx, req.(*GetAggregatedFlightsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
