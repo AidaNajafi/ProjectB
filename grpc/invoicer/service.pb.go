@@ -9,7 +9,6 @@ package invoicer
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -26,7 +25,7 @@ type GetAggregatedFlightsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Origin        string                 `protobuf:"bytes,1,opt,name=origin,proto3" json:"origin,omitempty"`
 	Dest          string                 `protobuf:"bytes,2,opt,name=dest,proto3" json:"dest,omitempty"`
-	DepartureDate *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=departure_date,json=departureDate,proto3" json:"departure_date,omitempty"`
+	DepartureDate string                 `protobuf:"bytes,3,opt,name=departure_date,json=departureDate,proto3" json:"departure_date,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -75,11 +74,11 @@ func (x *GetAggregatedFlightsRequest) GetDest() string {
 	return ""
 }
 
-func (x *GetAggregatedFlightsRequest) GetDepartureDate() *timestamppb.Timestamp {
+func (x *GetAggregatedFlightsRequest) GetDepartureDate() string {
 	if x != nil {
 		return x.DepartureDate
 	}
-	return nil
+	return ""
 }
 
 type FlightSolutions struct {
@@ -198,11 +197,11 @@ var File_service_proto protoreflect.FileDescriptor
 
 const file_service_proto_rawDesc = "" +
 	"\n" +
-	"\rservice.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\x8c\x01\n" +
+	"\rservice.proto\"p\n" +
 	"\x1bGetAggregatedFlightsRequest\x12\x16\n" +
 	"\x06origin\x18\x01 \x01(\tR\x06origin\x12\x12\n" +
-	"\x04dest\x18\x02 \x01(\tR\x04dest\x12A\n" +
-	"\x0edeparture_date\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\rdepartureDate\"\x85\x01\n" +
+	"\x04dest\x18\x02 \x01(\tR\x04dest\x12%\n" +
+	"\x0edeparture_date\x18\x03 \x01(\tR\rdepartureDate\"\x85\x01\n" +
 	"\x0fFlightSolutions\x12!\n" +
 	"\fairline_code\x18\x01 \x01(\tR\vairlineCode\x12\x14\n" +
 	"\x05price\x18\x02 \x01(\x03R\x05price\x12\x1d\n" +
@@ -231,18 +230,16 @@ var file_service_proto_goTypes = []any{
 	(*GetAggregatedFlightsRequest)(nil),  // 0: GetAggregatedFlightsRequest
 	(*FlightSolutions)(nil),              // 1: FlightSolutions
 	(*GetAggregatedFlightsResponse)(nil), // 2: GetAggregatedFlightsResponse
-	(*timestamppb.Timestamp)(nil),        // 3: google.protobuf.Timestamp
 }
 var file_service_proto_depIdxs = []int32{
-	3, // 0: GetAggregatedFlightsRequest.departure_date:type_name -> google.protobuf.Timestamp
-	1, // 1: GetAggregatedFlightsResponse.solutions:type_name -> FlightSolutions
-	0, // 2: SearchFlight.GetAggregatedFlights:input_type -> GetAggregatedFlightsRequest
-	2, // 3: SearchFlight.GetAggregatedFlights:output_type -> GetAggregatedFlightsResponse
-	3, // [3:4] is the sub-list for method output_type
-	2, // [2:3] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	1, // 0: GetAggregatedFlightsResponse.solutions:type_name -> FlightSolutions
+	0, // 1: SearchFlight.GetAggregatedFlights:input_type -> GetAggregatedFlightsRequest
+	2, // 2: SearchFlight.GetAggregatedFlights:output_type -> GetAggregatedFlightsResponse
+	2, // [2:3] is the sub-list for method output_type
+	1, // [1:2] is the sub-list for method input_type
+	1, // [1:1] is the sub-list for extension type_name
+	1, // [1:1] is the sub-list for extension extendee
+	0, // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_service_proto_init() }

@@ -1,12 +1,11 @@
 syntax = "proto3";
 option  go_package = "grpc-project/invoicer"; 
 
-import "google/protobuf/timestamp.proto";
 
 message GetAggregatedFlightsRequest {
     string origin = 1;
     string dest = 2;
-    google.protobuf.Timestamp departure_date = 3;
+    string departure_date = 3;
 }
 
 
