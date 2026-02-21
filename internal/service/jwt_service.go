@@ -7,11 +7,11 @@ import (
 )
 
 type JwtService struct {
-	jwtSecret []byte
+	JwtSecret []byte
 }
 
 func NewJwtService(j []byte) *JwtService {
-	return &JwtService{jwtSecret: j}
+	return &JwtService{JwtSecret: j}
 }
 
 type UserClaim struct {
@@ -26,7 +26,7 @@ func (j *JwtService) GenerateToken(claim UserClaim) (string, error) {
 		"exp":     time.Now().Add(72 * time.Hour).Unix(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString(j.jwtSecret)
+	tokenString, err := token.SignedString([]byte(j.JwtSecret))
 	if err != nil {
 		return "", err
 	}

@@ -1,7 +1,8 @@
-package middleware
+package controllers
 
 import (
 	"authentication/internal/service"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -51,17 +52,22 @@ func LoggerMiddleware() gin.HandlerFunc {
 
 func JwtMiddleware(jwtSvc *service.JwtService) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		tokeStr := ctx.GetHeader("Authorization")[7:]
-		if tokeStr == "" {
+		auth := ctx.GetHeader("Authorization")
+		if len(auth) < 8 || auth[:7] != "Bearer " {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"error": "missing authorization header",
+				"error": "missing or invalid authorization header",
 			})
+			return
 		}
-
-		token, err := jwt.Parse(tokeStr, func(t *jwt.Token) (interface{}, error) {
-			return jwtSvc, nil
+		tokenStr := auth[7:]
+		token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
+			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
+			}
+			return []byte(jwtSvc.JwtSecret), nil
 		})
 		if err != nil || !token.Valid {
+			log.Println(err)
 			ctx.JSON(401, gin.H{
 				"error": "invalid token",
 			})

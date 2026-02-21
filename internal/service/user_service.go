@@ -2,6 +2,7 @@ package service
 
 import (
 	"authentication/internal/helpers"
+	"authentication/internal/provider"
 	"authentication/internal/repository"
 	"database/sql"
 	"errors"
@@ -10,8 +11,9 @@ import (
 )
 
 type AuthService struct {
-	repo   repository.Store
-	jwtTok *JwtService
+	repo     repository.Store
+	jwtTok   *JwtService
+	provider *provider.Provider
 }
 
 func NewAuthService(r repository.Store, jwtTok *JwtService) *AuthService {
@@ -29,11 +31,12 @@ func (a *AuthService) SignUp(user SignUpRequest) error {
 		return fmt.Errorf("Failed to retrieve user %w", err)
 	}
 	if err := a.repo.CreateUser(repository.UserInfo{
-		ID:       user.ID,
-		Name:     user.Name,
-		Username: user.Username,
-		Email:    user.Email,
-		Password: hashed,
+		ID:        user.ID,
+		Name:      user.Name,
+		Username:  user.Username,
+		Email:     user.Email,
+		UserPhone: user.UserPhone,
+		Password:  hashed,
 	}); err != nil {
 
 		log.Println(err)

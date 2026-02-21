@@ -16,6 +16,9 @@ type Config struct {
 	DBsslmode  string
 	SecretKey  string
 	ServerPort string
+	HealthURL  string
+	BaseURL    string
+	ApiKey     string
 }
 
 func LoadConfig() (*Config, error) {
@@ -33,5 +36,8 @@ func LoadConfig() (*Config, error) {
 		DBsslmode:  os.Getenv("DATABASE_SSLMODE"),
 		SecretKey:  os.Getenv("JWT_SECRET"),
 		ServerPort: os.Getenv("SERVER_PORT"),
+		HealthURL:  os.Getenv("API_HEALTH_URL"),
+		ApiKey:     os.Getenv("PROVIDER_KEY"),
+		BaseURL:    os.Getenv("BASE_URL"),
 	}, nil
 }

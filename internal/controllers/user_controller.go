@@ -15,7 +15,7 @@ type Controller struct {
 	validate *validator.Validate
 }
 
-func NewController(svc *service.AuthService, validator *validator.Validate) *Controller {
+func NewUserController(svc *service.AuthService, validator *validator.Validate) *Controller {
 	return &Controller{
 		svc:      svc,
 		validate: validator,
@@ -23,11 +23,12 @@ func NewController(svc *service.AuthService, validator *validator.Validate) *Con
 }
 
 type SignUpControl struct {
-	ID       int    `json:"id"`
-	Name     string `json:"name" validate:"required"`
-	Username string `json:"username" validate:"required"`
-	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required"`
+	ID        int    `json:"id"`
+	Name      string `json:"name" validate:"required"`
+	Username  string `json:"username" validate:"required"`
+	Email     string `json:"email" validate:"required,email"`
+	UserPhone string `json:"userphone" validate:"required"`
+	Password  string `json:"password" validate:"required"`
 }
 
 func (c *Controller) SignUp() gin.HandlerFunc {
@@ -63,11 +64,12 @@ func (c *Controller) SignUp() gin.HandlerFunc {
 		}
 
 		SReq := service.SignUpRequest{
-			ID:       body.ID,
-			Name:     body.Name,
-			Username: body.Username,
-			Email:    body.Email,
-			Password: body.Password,
+			ID:        body.ID,
+			Name:      body.Name,
+			Username:  body.Username,
+			Email:     body.Email,
+			UserPhone: body.UserPhone,
+			Password:  body.Password,
 		}
 
 		err = c.svc.SignUp(SReq)
@@ -87,8 +89,9 @@ func (c *Controller) SignUp() gin.HandlerFunc {
 }
 
 type LoginControl struct {
-	Username string `json:"username" validate:"required"`
-	Password string `json:"password" validate:"required"`
+	Username  string `json:"username" validate:"required"`
+	UserPhone string `json:"userphone validate:"required"`
+	Password  string `json:"password" validate:"required"`
 }
 
 func (c *Controller) Login() gin.HandlerFunc {
@@ -111,8 +114,9 @@ func (c *Controller) Login() gin.HandlerFunc {
 		}
 
 		tokenString, err := c.svc.Login(service.LoginRequest{
-			Username: body.Username,
-			Password: body.Password,
+			Username:  body.Username,
+			UserPhone: body.UserPhone,
+			Password:  body.Password,
 		})
 		if err != nil {
 			logf(ctx, "login logic failed: %v", err)
@@ -156,3 +160,14 @@ func getValidationErrorMessage(v validator.FieldError) string {
 		return fmt.Sprintf("%s field must not be empty", v.Field())
 	}
 }
+
+func (c *Controller) HealthChecker() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		ctx.JSON(200, gin.H{
+			"status":  "healthy",
+			"message": "your application is healthy",
+		})
+	}
+}
+
+
