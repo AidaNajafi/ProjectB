@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"authentication/internal/domain"
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
@@ -35,11 +37,56 @@ func (ps *PostgresStore) GetUserByUsername(username string) (*UserInfo, error) {
 	return &user, nil
 }
 
-func (ps *PostgresStore) CreateReservation(u ReservationInfo) error {
-	_, err := ps.db.Exec("INSERT INTO reservation (user_id, user_phone, room_id, hotel_id, date_from, date_to, status) VALUES ($1, $2, $3, $4, $5, $6, $7)", u.UserID, u.UserPhone, u.RoomID, u.HotelID, u.DateFrom, u.DateTo)
+func (ps *PostgresStore) CreatePendingReservation(ctx context.Context, p ReservationRequest) (int64, error) {
+	const q = `
+	INSERT INTO reservation
+		(user_id, user_phone, room_id, date_from, date_to, reservation_status)
+	VALUES
+		($1, $2, $3, $4, $5, $6)
+	RETURNING id
+	`
+	var id int64
+	err := ps.db.QueryRowContext(ctx, q,
+		p.UserID,
+		p.UserPhone,
+		p.RoomID,
+		p.DateFrom,
+		p.DateTo,
+		"pending",
+	).Scan(&id)
 	if err != nil {
-		log.Println("failed creating reservation")
-		return fmt.Errorf("Failed to insert new reservation: %w", err)
+		return 0, fmt.Errorf("Failed to create pending reservation: %w", err)
 	}
+	return id, nil
+}
+
+func (ps *PostgresStore) ConfirmedReservation(ctx context.Context, id int64, pr ReservationResponse) error {
+	const q = `
+	UPDATE reservation
+	SET reservation_status='confirmed',
+		provider_id=$2,
+		hotel_id=$3
+	WHERE id=$1 AND reservation_status='pending'
+	`
+	_, err := ps.db.ExecContext(ctx, q, id, pr.ProviderID, pr.HotelID)
+	if err != nil {
+		return fmt.Errorf("Failed to confirm reservation: %w", err)
+	}
+	return nil
+}
+
+func (ps *PostgresStore) FailedReservation(ctx context.Context, id int64, pr ReservationResponse, reason domain.FailureReason) error {
+	const q = `
+	UPDATE reservation
+	SET reservation_status='failed',
+		provider_id=$2,
+		hotel_id=$3
+	WHERE id=$1 AND reservation_status='pending'
+	`
+	_, err := ps.db.ExecContext(ctx, q, id, pr.ProviderID, pr.HotelID)
+	if err != nil {
+		return fmt.Errorf("Failed to mark failure for reservation: %w", err)
+	}
+	log.Println("Reservation Failed for id %d: %s", id, reason)
 	return nil
 }

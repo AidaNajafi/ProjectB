@@ -1,5 +1,10 @@
 package repository
 
+import (
+	"authentication/internal/domain"
+	"context"
+)
+
 type UserInfo struct {
 	ID        int
 	Name      string
@@ -9,19 +14,30 @@ type UserInfo struct {
 	Password  string
 }
 
-type ReservationInfo struct {
-	ID        int
-	RoomID    int
-	HotelID   int
-	UserID    int
+type ReservationResponse struct {
+	ID         int64
+	ProviderID int64
+	RoomID     int64
+	HotelID    int64
+	UserID     int64
+	UserPhone  string
+	DateFrom   string
+	DateTo     string
+	Status     string
+}
+
+type ReservationRequest struct {
+	RoomID    int64
+	UserID    int64
 	UserPhone string
 	DateFrom  string
 	DateTo    string
-	Status    string
 }
 
 type Store interface {
 	CreateUser(user UserInfo) error
 	GetUserByUsername(username string) (*UserInfo, error)
-	CreateReservation(r ReservationInfo) error
+	CreatePendingReservation(ctx context.Context, p ReservationRequest) (int64, error)
+	ConfirmedReservation(ctx context.Context, id int64, pr ReservationResponse) error
+	FailedReservation(ctx context.Context, id int64, pr ReservationResponse, reason domain.FailureReason) error
 }

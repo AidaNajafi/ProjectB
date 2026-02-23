@@ -43,7 +43,7 @@ func (h *HotelController) GetHotelByDateController() gin.HandlerFunc {
 func (h *HotelController) GetHotelByIDController() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		inputId := ctx.Param("id")
-		id, err := strconv.Atoi(inputId)
+		id, err := strconv.ParseInt(inputId, 10, 64)
 		if err != nil {
 			ctx.JSON(400, gin.H{
 				"error": "id must be integer!",
@@ -68,7 +68,7 @@ func (h *HotelController) GetHotelByIDController() gin.HandlerFunc {
 func (h *HotelController) GetHotelRoomsController() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		inputId := ctx.Param("id")
-		id, err := strconv.Atoi(inputId)
+		id, err := strconv.ParseInt(inputId, 10, 64)
 		if err != nil {
 			ctx.JSON(400, gin.H{
 				"error": "id must be integer!",
@@ -98,10 +98,10 @@ func (h *HotelController) GetHotelRoomsController() gin.HandlerFunc {
 }
 
 type ReservationResponse struct {
-	ID        int    `json:"id"`
-	RoomID    int    `json:"room_id"`
-	HotelID   int    `json:"hotel_id"`
-	UserID    int    `json:"user_id"`
+	ID        int64  `json:"id"`
+	RoomID    int64  `json:"room_id"`
+	HotelID   int64  `json:"hotel_id"`
+	UserID    int64  `json:"user_id"`
 	UserPhone string `json:"user_phone"`
 	DateFrom  string `json:"date_from"`
 	DateTo    string `json:"date_to"`
@@ -109,16 +109,17 @@ type ReservationResponse struct {
 }
 
 type ReservationRequest struct {
-	RoomID    int    `json:"room_id"`
+	RoomID    int64  `json:"room_id"`
 	DateFrom  string `json:"date_from"`
 	DateTo    string `json:"date_to"`
-	UserID    int    `json:"user_id"`
+	UserID    int64  `json:"user_id"`
 	UserPhone string `json:"user_phone"`
 }
 
 func (h *HotelController) ReserveHotelController() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		var body ReservationRequest
+
 		if err := ctx.ShouldBindJSON(&body); err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{
 				"error":   err.Error(),
@@ -126,9 +127,11 @@ func (h *HotelController) ReserveHotelController() gin.HandlerFunc {
 			})
 			return
 		}
-		resp, err := h.svc.ReserveHotelService(service.ReservationRequest(body))
+		handlerBody := mapServiceToHanlder(body)
+		resp, err := h.svc.ReserveHotelService(ctx, handlerBody)
 		if err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{
+
 				"error": err.Error(),
 			})
 			return
@@ -137,5 +140,15 @@ func (h *HotelController) ReserveHotelController() gin.HandlerFunc {
 			"message": "Reservation successful",
 			"result":  resp,
 		})
+	}
+}
+
+func mapServiceToHanlder(re ReservationRequest) service.ReservationRequest {
+	return service.ReservationRequest{
+		RoomID:    re.RoomID,
+		DateFrom:  re.DateFrom,
+		DateTo:    re.DateTo,
+		UserID:    re.UserID,
+		UserPhone: re.UserPhone,
 	}
 }

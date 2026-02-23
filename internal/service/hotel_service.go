@@ -1,21 +1,25 @@
 package service
 
 import (
+	"authentication/internal/domain"
 	"authentication/internal/provider"
+	"authentication/internal/repository"
+	"context"
 	"fmt"
+	"log"
 )
-
 
 type HotelService struct {
 	Provider *provider.Provider
+	Store    repository.Store
 }
 
-func NewHotelService(prv *provider.Provider) *HotelService {
-	return &HotelService{Provider: prv}
+func NewHotelService(prv *provider.Provider, store repository.Store) *HotelService {
+	return &HotelService{Provider: prv, Store: store}
 }
 
 type HotelByDate struct {
-	Count  int
+	Count  int64
 	Date   string
 	Hotels []HotelDetail
 }
@@ -53,7 +57,7 @@ func MappHotelDetails(ProviderHotel provider.HotelDetail) HotelDetail {
 }
 
 type HotelDetail struct {
-	ID             int
+	ID             int64
 	Name           string
 	Status         string
 	Description    string
@@ -62,11 +66,11 @@ type HotelDetail struct {
 	City           string
 	Amenities      []string
 	Rating         float64
-	TotalRooms     int
-	AvailableRooms int
+	TotalRooms     int64
+	AvailableRooms int64
 }
 
-func (h *HotelService) GetHotelByID(id int) (HotelDetail, error) {
+func (h *HotelService) GetHotelByID(id int64) (HotelDetail, error) {
 
 	hotelDetail, err := h.Provider.HotelByID(id)
 	if err != nil {
@@ -77,24 +81,24 @@ func (h *HotelService) GetHotelByID(id int) (HotelDetail, error) {
 }
 
 type HotelRoom struct {
-	Count   int
-	HotelID int
+	Count   int64
+	HotelID int64
 	Rooms   []RoomDetail
 }
 
 type RoomDetail struct {
-	ID          int
-	HotelID     int
+	ID          int64
+	HotelID     int64
 	Name        string
-	Price       int
+	Price       int64
 	Currency    string
-	Capacity    int
+	Capacity    int64
 	BedType     string
-	SizeSQM     int
+	SizeSQM     int64
 	IsAvailable bool
 }
 
-func (h *HotelService) GetHotelRooms(id int, date_from, date_to string) (HotelRoom, error) {
+func (h *HotelService) GetHotelRooms(id int64, date_from, date_to string) (HotelRoom, error) {
 	RoomsList, err := h.Provider.HotelRooms(id, date_from, date_to)
 	if err != nil {
 		return HotelRoom{}, fmt.Errorf("Failed to Get rooms with these params")
@@ -127,48 +131,103 @@ func MapRoomDetails(provider provider.RoomDetail) RoomDetail {
 }
 
 type ReservationResponse struct {
-	ID        int
-	RoomID    int
-	HotelID   int
-	UserID    int
-	UserPhone string
-	DateFrom  string
-	DateTo    string
-	Status    string
+	ID         int64
+	ProviderID int64
+	RoomID     int64
+	HotelID    int64
+	UserID     int64
+	UserPhone  string
+	DateFrom   string
+	DateTo     string
+	Status     string
 }
 
 type ReservationRequest struct {
-	RoomID    int
+	RoomID    int64
 	DateFrom  string
 	DateTo    string
-	UserID    int
+	UserID    int64
 	UserPhone string
 }
 
-func (h *HotelService) ReserveHotelService(req ReservationRequest) (ReservationResponse, error) {
+func (h *HotelService) ReserveHotelService(ctx context.Context, req ReservationRequest) (ReservationResponse, error) {
 	if req.RoomID <= 0 || req.UserID <= 0 || req.DateFrom == "" || req.DateTo == "" {
 		return ReservationResponse{}, fmt.Errorf("invalid reservation request")
 	}
-	request := provider.ReservationRequest{
-		RoomID:    req.RoomID,
-		DateFrom:  req.DateFrom,
-		DateTo:    req.DateTo,
-		UserID:    req.UserID,
-		UserPhone: req.UserPhone,
-	}
-	resp, err := h.Provider.ReserveHotel(request)
+	repoReq := mapServiceRequestToRepository(req)
+	id, err := h.Store.CreatePendingReservation(ctx, repoReq)
 	if err != nil {
-		return ReservationResponse{}, fmt.Errorf("Failed to reserve hotel: %w", err)
+		return ReservationResponse{}, fmt.Errorf("failed creating pending reservation %w", err)
 	}
-	result := ReservationResponse{
-		ID:        resp.ID,
-		RoomID:    resp.RoomID,
-		HotelID:   resp.HotelID,
-		UserID:    resp.UserID,
-		UserPhone: resp.UserPhone,
-		DateFrom:  resp.DateFrom,
-		DateTo:    resp.DateTo,
-		Status:    resp.Status,
+
+	ProviderRequest := mapServiceRequestToProvider(req)
+
+	ProviderResponse, err := h.Provider.ReserveHotel(ctx, ProviderRequest)
+	RepoResponse := mapProviderResponseToRepository(ProviderResponse)
+	if err != nil {
+		reason := domain.ClassifyProviderError(err)
+		log.Println(reason)
+		storeErr := h.Store.FailedReservation(ctx, id, RepoResponse, reason)
+		log.Printf("DEBUG provider err=%v | storeErr=%T %#v | storeErr==nil? %v",
+			err, storeErr, storeErr, storeErr == nil,
+		)
+		if storeErr != nil {
+			return ReservationResponse{}, fmt.Errorf("Failed to mark failure for reservation: %w : %s", storeErr, reason)
+		}
+		return ReservationResponse{}, fmt.Errorf("Failed to reserve hotel: %w : %s", err, reason)
 	}
-	return result, nil
+
+	err = h.Store.ConfirmedReservation(ctx, id, RepoResponse)
+	if err != nil {
+		reason := domain.ClassifyProviderError(err)
+		return ReservationResponse{}, fmt.Errorf("Failed to confirm reservation: %w : %s", err, reason)
+	}
+	response := mapProviderResponseToService(ProviderResponse)
+	return response, nil
+}
+
+func mapServiceRequestToProvider(pr ReservationRequest) provider.ReservationRequest {
+	return provider.ReservationRequest{
+		RoomID:    pr.RoomID,
+		DateFrom:  pr.DateFrom,
+		DateTo:    pr.DateTo,
+		UserID:    pr.UserID,
+		UserPhone: pr.UserPhone,
+	}
+}
+
+func mapProviderResponseToService(pr provider.ReservationResponse) ReservationResponse {
+	return ReservationResponse{
+		ProviderID: pr.ProviderID,
+		RoomID:     pr.RoomID,
+		HotelID:    pr.HotelID,
+		UserID:     pr.UserID,
+		UserPhone:  pr.UserPhone,
+		DateFrom:   pr.DateFrom,
+		DateTo:     pr.DateTo,
+		Status:     pr.Status,
+	}
+}
+
+func mapServiceRequestToRepository(re ReservationRequest) repository.ReservationRequest {
+	return repository.ReservationRequest{
+		RoomID:    re.RoomID,
+		DateFrom:  re.DateFrom,
+		DateTo:    re.DateTo,
+		UserID:    re.UserID,
+		UserPhone: re.UserPhone,
+	}
+}
+
+func mapProviderResponseToRepository(re provider.ReservationResponse) repository.ReservationResponse {
+	return repository.ReservationResponse{
+		ProviderID: re.ProviderID,
+		RoomID:     re.RoomID,
+		HotelID:    re.HotelID,
+		UserID:     re.UserID,
+		UserPhone:  re.UserPhone,
+		DateFrom:   re.DateFrom,
+		DateTo:     re.DateTo,
+		Status:     re.Status,
+	}
 }
