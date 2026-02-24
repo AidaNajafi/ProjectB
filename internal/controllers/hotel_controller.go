@@ -25,7 +25,7 @@ func (h *HotelController) GetHotelByDateController() gin.HandlerFunc {
 			})
 			return
 		}
-		hotelsByDate, err := h.svc.GetHotelsByDate(date)
+		hotelsByDate, err := h.svc.GetHotelsByDate(ctx, date)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{
 				"error":   err.Error(),
@@ -51,7 +51,7 @@ func (h *HotelController) GetHotelByIDController() gin.HandlerFunc {
 			})
 			return
 		}
-		hotelByID, err := h.svc.GetHotelByID(id)
+		hotelByID, err := h.svc.GetHotelByID(ctx, id)
 		if err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{
 				"error": "Failed to get hotel with this id",
@@ -84,7 +84,7 @@ func (h *HotelController) GetHotelRoomsController() gin.HandlerFunc {
 			})
 			return
 		}
-		hotelRooms, err := h.svc.GetHotelRooms(id, date_from, date_to)
+		hotelRooms, err := h.svc.GetHotelRooms(ctx, id, date_from, date_to)
 		if err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{
 				"error": "failed to get hotel rooms",

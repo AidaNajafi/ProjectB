@@ -23,8 +23,8 @@ type HotelByDate struct {
 	Hotels []HotelDetail
 }
 
-func (h *HotelService) GetHotelsByDate(date string) (HotelByDate, error) {
-	hotels, err := h.Provider.HotelByDate(date)
+func (h *HotelService) GetHotelsByDate(ctx context.Context, date string) (HotelByDate, error) {
+	hotels, err := h.Provider.HotelByDate(ctx, date)
 	if err != nil {
 		return HotelByDate{}, fmt.Errorf("Failed to Get hotels for this date %s! %w", date, err)
 	}
@@ -69,9 +69,9 @@ type HotelDetail struct {
 	AvailableRooms int64
 }
 
-func (h *HotelService) GetHotelByID(id int64) (HotelDetail, error) {
+func (h *HotelService) GetHotelByID(ctx context.Context, id int64) (HotelDetail, error) {
 
-	hotelDetail, err := h.Provider.HotelByID(id)
+	hotelDetail, err := h.Provider.HotelByID(ctx, id)
 	if err != nil {
 		return HotelDetail{}, fmt.Errorf("Failed to find hotel by this id %d : %w", id, err)
 	}
@@ -97,8 +97,8 @@ type RoomDetail struct {
 	IsAvailable bool
 }
 
-func (h *HotelService) GetHotelRooms(id int64, date_from, date_to string) (HotelRoom, error) {
-	RoomsList, err := h.Provider.HotelRooms(id, date_from, date_to)
+func (h *HotelService) GetHotelRooms(ctx context.Context, id int64, date_from, date_to string) (HotelRoom, error) {
+	RoomsList, err := h.Provider.HotelRooms(ctx, id, date_from, date_to)
 	if err != nil {
 		return HotelRoom{}, fmt.Errorf("Failed to Get rooms with these params")
 	}

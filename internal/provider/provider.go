@@ -41,10 +41,10 @@ type HotelByDate struct {
 	Hotels []HotelDetail
 }
 
-func (p *Provider) HotelByDate(date string) (HotelByDate, error) {
+func (p *Provider) HotelByDate(ctx context.Context, date string) (HotelByDate, error) {
 	url := fmt.Sprintf("%s/hotels?date=%s", p.BaseURL, date)
 
-	body, err := p.DoGetRequest(url, p.ApiKey)
+	body, err := p.DoGetRequest(ctx, url, p.ApiKey)
 	if err != nil {
 		return HotelByDate{}, fmt.Errorf("Failed to connect to provider")
 	}
@@ -69,10 +69,10 @@ type HotelDetail struct {
 	AvailableRooms int64    `json:"availablerooms"`
 }
 
-func (p *Provider) HotelByID(id int64) (HotelDetail, error) {
+func (p *Provider) HotelByID(ctx context.Context, id int64) (HotelDetail, error) {
 
 	url := fmt.Sprintf("%s/hotels/%d", p.BaseURL, id)
-	body, err := p.DoGetRequest(url, p.ApiKey)
+	body, err := p.DoGetRequest(ctx, url, p.ApiKey)
 	if err != nil {
 		return HotelDetail{}, fmt.Errorf("Failed to connect to provider %w", err)
 	}
@@ -91,9 +91,9 @@ type HotelRoom struct {
 	Rooms   []RoomDetail
 }
 
-func (p *Provider) HotelRooms(id int64, date_from, date_to string) (HotelRoom, error) {
+func (p *Provider) HotelRooms(ctx context.Context, id int64, date_from, date_to string) (HotelRoom, error) {
 	url := fmt.Sprintf("%s/hotels/%d/rooms?date_from=%s&date_to=%s", p.BaseURL, id, date_from, date_to)
-	body, err := p.DoGetRequest(url, p.ApiKey)
+	body, err := p.DoGetRequest(ctx, url, p.ApiKey)
 	if err != nil {
 		return HotelRoom{}, fmt.Errorf("Failed to connect to provider")
 	}
@@ -104,7 +104,7 @@ func (p *Provider) HotelRooms(id int64, date_from, date_to string) (HotelRoom, e
 	return hotelRooms, nil
 }
 
-func (p *Provider) DoGetRequest(url, apiKey string) ([]byte, error) {
+func (p *Provider) DoGetRequest(ctx context.Context, url, apiKey string) ([]byte, error) {
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create request: %w", err)

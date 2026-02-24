@@ -16,6 +16,13 @@ const (
 	FailUnknown         FailureReason = "unknown"
 )
 
+
+func (r FailureReason) Error() string{
+	return string(r)
+}
+
+
+
 func ClassifyProviderError(err error) FailureReason {
 	if err == nil {
 		return ""
