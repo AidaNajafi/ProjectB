@@ -56,11 +56,10 @@ type CBProvider struct {
 	timeout time.Duration
 }
 
-func NewCBProvider(next HotelProvider, cb *gobreaker.CircuitBreaker, timeout time.Duration) *CBProvider {
+func NewCBProvider(next HotelProvider, cb *gobreaker.CircuitBreaker) *CBProvider {
 	return &CBProvider{
 		next:    next,
 		breaker: cb,
-		timeout: timeout,
 	}
 }
 

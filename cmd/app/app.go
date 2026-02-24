@@ -14,6 +14,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
+	"github.com/sony/gobreaker"
 )
 
 type App struct {
@@ -46,7 +47,16 @@ func AppStart() error {
 	repo := repository.NewPostgresStore(db)
 	jwtToken := service.NewJwtService([]byte(cfg.SecretKey))
 
-	provider := provider.NewProvider(cfg.BaseURL, cfg.ApiKey, cfg.TimeOut)
+	real := provider.NewProvider(cfg.BaseURL, cfg.ApiKey, cfg.TimeOut)
+	cb := provider.NewProviderBreaker(provider.BreakerConfig{
+		Name:       cfg.CBname,
+		MaxRequest: cfg.CBMaxRequest,
+		Interval:   cfg.CBTimeOut,
+		Timeout:    cfg.TimeOut,
+	}, func(name string, from, to gobreaker.State) {
+		log.Printf("%s: %s -> %s", name, from, to)
+	})
+	provider := provider.NewCBProvider(real, cb)
 	HotelSvc := service.NewHotelService(provider, repo)
 
 	validator := validator.New()

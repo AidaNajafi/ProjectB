@@ -9,11 +9,11 @@ import (
 )
 
 type HotelService struct {
-	Provider *provider.Provider
+	Provider *provider.CBProvider
 	Store    repository.Store
 }
 
-func NewHotelService(prv *provider.Provider, store repository.Store) *HotelService {
+func NewHotelService(prv *provider.CBProvider, store repository.Store) *HotelService {
 	return &HotelService{Provider: prv, Store: store}
 }
 
