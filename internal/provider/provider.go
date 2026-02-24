@@ -20,7 +20,9 @@ type Provider struct {
 }
 
 func NewProvider(baseUrl, apiKey string, timeout time.Duration) *Provider {
-	return &Provider{BaseURL: baseUrl, ApiKey: apiKey, TimeOut: timeout}
+	return &Provider{BaseURL: baseUrl, ApiKey: apiKey, Client: &http.Client{
+		Timeout: timeout},
+	} 
 }
 
 type RoomDetail struct {

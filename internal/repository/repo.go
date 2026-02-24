@@ -41,3 +41,5 @@ type Store interface {
 	ConfirmedReservation(ctx context.Context, id int64, pr ReservationResponse) error
 	FailedReservation(ctx context.Context, id int64, pr ReservationResponse, reason provider.FailureReason) error
 }
+
+

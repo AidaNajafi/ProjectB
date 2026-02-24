@@ -28,9 +28,9 @@ func (h *HotelService) GetHotelsByDate(ctx context.Context, date string) (HotelB
 	if err != nil {
 		return HotelByDate{}, fmt.Errorf("Failed to Get hotels for this date %s! %w", date, err)
 	}
-	var hotelList []HotelDetail
+	hotelList:= make([]HotelDetail,0, len(hotels.Hotels))
 	for _, providerHotel := range hotels.Hotels {
-		mappedHotelDetail := MappHotelDetails(providerHotel)
+		mappedHotelDetail := mapHotelDetails(providerHotel)
 		hotelList = append(hotelList, mappedHotelDetail)
 	}
 	return HotelByDate{
@@ -39,7 +39,7 @@ func (h *HotelService) GetHotelsByDate(ctx context.Context, date string) (HotelB
 		Hotels: hotelList}, nil
 }
 
-func MappHotelDetails(ProviderHotel provider.HotelDetail) HotelDetail {
+func mapHotelDetails(ProviderHotel provider.HotelDetail) HotelDetail {
 	return HotelDetail{
 		ID:             ProviderHotel.ID,
 		Name:           ProviderHotel.Name,
@@ -75,7 +75,7 @@ func (h *HotelService) GetHotelByID(ctx context.Context, id int64) (HotelDetail,
 	if err != nil {
 		return HotelDetail{}, fmt.Errorf("Failed to find hotel by this id %d : %w", id, err)
 	}
-	mappedHotelId := MappHotelDetails(hotelDetail)
+	mappedHotelId := mapHotelDetails(hotelDetail)
 	return mappedHotelId, nil
 }
 
@@ -102,9 +102,9 @@ func (h *HotelService) GetHotelRooms(ctx context.Context, id int64, date_from, d
 	if err != nil {
 		return HotelRoom{}, fmt.Errorf("Failed to Get rooms with these params")
 	}
-	var roomDetail []RoomDetail
+	roomDetail:= make([]RoomDetail, 0, len(RoomsList.Rooms))
 	for _, rooms := range RoomsList.Rooms {
-		mappedRoomDetail := MapRoomDetails(rooms)
+		mappedRoomDetail := mapRoomDetails(rooms)
 		roomDetail = append(roomDetail, mappedRoomDetail)
 	}
 	return HotelRoom{
@@ -115,7 +115,7 @@ func (h *HotelService) GetHotelRooms(ctx context.Context, id int64, date_from, d
 
 }
 
-func MapRoomDetails(provider provider.RoomDetail) RoomDetail {
+func mapRoomDetails(provider provider.RoomDetail) RoomDetail {
 	return RoomDetail{
 		ID:          provider.ID,
 		HotelID:     provider.HotelID,

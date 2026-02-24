@@ -99,14 +99,15 @@ func (h *HotelController) GetHotelRoomsController() gin.HandlerFunc {
 }
 
 type ReservationResponse struct {
-	ID        int64  `json:"id"`
-	RoomID    int64  `json:"room_id"`
-	HotelID   int64  `json:"hotel_id"`
-	UserID    int64  `json:"user_id"`
-	UserPhone string `json:"user_phone"`
-	DateFrom  string `json:"date_from"`
-	DateTo    string `json:"date_to"`
-	Status    string `json:"status"`
+	ID         int64  `json:"id"`
+	ProviderID int64  `json:"provider_id"`
+	RoomID     int64  `json:"room_id"`
+	HotelID    int64  `json:"hotel_id"`
+	UserID     int64  `json:"user_id"`
+	UserPhone  string `json:"user_phone"`
+	DateFrom   string `json:"date_from"`
+	DateTo     string `json:"date_to"`
+	Status     string `json:"status"`
 }
 
 type ReservationRequest struct {
@@ -128,28 +129,26 @@ func (h *HotelController) ReserveHotelController() gin.HandlerFunc {
 			})
 			return
 		}
-		handlerBody := mapServiceToHanlder(body)
-		resp, err := h.svc.ReserveHotelService(ctx, handlerBody)
+		BodySvr := mapHandlerModelToService(body)
+		respSvr, err := h.svc.ReserveHotelService(ctx, BodySvr)
 		if err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{
-
 				"error": err.Error(),
 			})
 			return
 		}
+		handlerBody := mapServiceModelToHandlere(respSvr)
 		ctx.JSON(http.StatusOK, gin.H{
 			"message": "Reservation successful",
-			"result":  resp,
+			"result":  handlerBody,
 		})
 	}
 }
 
-func mapServiceToHanlder(re ReservationRequest) service.ReservationRequest {
-	return service.ReservationRequest{
-		RoomID:    re.RoomID,
-		DateFrom:  re.DateFrom,
-		DateTo:    re.DateTo,
-		UserID:    re.UserID,
-		UserPhone: re.UserPhone,
-	}
+func mapHandlerModelToService(re ReservationRequest) service.ReservationRequest {
+	return service.ReservationRequest(re)
+}
+
+func mapServiceModelToHandlere(res service.ReservationResponse) ReservationResponse {
+	return ReservationResponse(res)
 }

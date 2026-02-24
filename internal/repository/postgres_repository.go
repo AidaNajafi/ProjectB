@@ -37,6 +37,14 @@ func (ps *PostgresStore) GetUserByUsername(username string) (*UserInfo, error) {
 	return &user, nil
 }
 
+type Status string
+
+const (
+	Pending   Status = "pending"
+	Failed    Status = "failed"
+	Confirmed Status = "confirmed"
+)
+
 func (ps *PostgresStore) CreatePendingReservation(ctx context.Context, p ReservationRequest) (int64, error) {
 	const q = `
 	INSERT INTO reservation
@@ -52,7 +60,7 @@ func (ps *PostgresStore) CreatePendingReservation(ctx context.Context, p Reserva
 		p.RoomID,
 		p.DateFrom,
 		p.DateTo,
-		"pending",
+		string(Pending),
 	).Scan(&id)
 	if err != nil {
 		return 0, fmt.Errorf("Failed to create pending reservation: %w", err)
@@ -63,12 +71,16 @@ func (ps *PostgresStore) CreatePendingReservation(ctx context.Context, p Reserva
 func (ps *PostgresStore) ConfirmedReservation(ctx context.Context, id int64, pr ReservationResponse) error {
 	const q = `
 	UPDATE reservation
-	SET reservation_status='confirmed',
-		provider_id=$2,
-		hotel_id=$3
+	SET reservation_status=$2,
+		provider_id=$3,
+		hotel_id=$4
 	WHERE id=$1 AND reservation_status='pending'
 	`
-	_, err := ps.db.ExecContext(ctx, q, id, pr.ProviderID, pr.HotelID)
+	_, err := ps.db.ExecContext(ctx, q,
+		id, 
+		string(Confirmed),
+		pr.ProviderID, 
+		pr.HotelID)
 	if err != nil {
 		return fmt.Errorf("Failed to confirm reservation: %w", err)
 	}
@@ -78,12 +90,16 @@ func (ps *PostgresStore) ConfirmedReservation(ctx context.Context, id int64, pr 
 func (ps *PostgresStore) FailedReservation(ctx context.Context, id int64, pr ReservationResponse, reason provider.FailureReason) error {
 	const q = `
 	UPDATE reservation
-	SET reservation_status='failed',
-		provider_id=$2,
-		hotel_id=$3
+	SET reservation_status=$2,
+		provider_id=$3,
+		hotel_id=$4
 	WHERE id=$1 AND reservation_status='pending'
 	`
-	_, err := ps.db.ExecContext(ctx, q, id, pr.ProviderID, pr.HotelID)
+	_, err := ps.db.ExecContext(ctx, q, 
+		id,
+		string(Failed), 
+		pr.ProviderID, 
+		pr.HotelID)
 	if err != nil {
 		return fmt.Errorf("Failed to mark failure for reservation: %w", err)
 	}
