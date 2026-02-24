@@ -1,7 +1,6 @@
 package provider
 
 import (
-	"authentication/internal/config"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -13,42 +12,15 @@ import (
 	"time"
 )
 
-type ProviderMethods interface {
-	HotelByDate(date string) (HotelByDate, error)
-	HotelByID(id int64) (HotelDetail, error)
-	HotelRooms(id int64, date_from, date_to string) (HotelRoom, error)
-	ReserveHotel(req ReservationRequest) (ReservationResponse, error)
-}
-
 type Provider struct {
-	config *config.Config
-	client *http.Client
+	BaseURL string
+	ApiKey  string
+	Client  *http.Client
+	TimeOut time.Duration
 }
 
-func NewProvider(cfg *config.Config) *Provider {
-	return &Provider{config: cfg, client: &http.Client{
-		Timeout: 10 * time.Second,
-	}}
-}
-
-type HotelDetail struct {
-	ID             int64    `json:"id"`
-	Name           string   `json:"name"`
-	Status         string   `json:"status"`
-	Description    string   `json:"description"`
-	ImageUrl       string   `json:"image_url"`
-	Address        string   `json:"address"`
-	City           string   `json:"city"`
-	Amenities      []string `json:"amenities"`
-	Rating         float64  `json:"rating"`
-	TotalRooms     int64    `json:"totalrooms"`
-	AvailableRooms int64    `json:"availablerooms"`
-}
-
-type HotelRoom struct {
-	Count   int64 `json:"count"`
-	HotelID int64 `json:"hotelid"`
-	Rooms   []RoomDetail
+func NewProvider(baseUrl, apiKey string, timeout time.Duration) *Provider {
+	return &Provider{BaseURL: baseUrl, ApiKey: apiKey, TimeOut: timeout}
 }
 
 type RoomDetail struct {
@@ -70,9 +42,9 @@ type HotelByDate struct {
 }
 
 func (p *Provider) HotelByDate(date string) (HotelByDate, error) {
-	url := fmt.Sprintf("%s/hotels?date=%s", p.config.BaseURL, date)
+	url := fmt.Sprintf("%s/hotels?date=%s", p.BaseURL, date)
 
-	body, err := StartProviderGetServer(url, p.config.ApiKey)
+	body, err := p.DoGetRequest(url, p.ApiKey)
 	if err != nil {
 		return HotelByDate{}, fmt.Errorf("Failed to connect to provider")
 	}
@@ -83,10 +55,24 @@ func (p *Provider) HotelByDate(date string) (HotelByDate, error) {
 	return hotel, nil
 }
 
+type HotelDetail struct {
+	ID             int64    `json:"id"`
+	Name           string   `json:"name"`
+	Status         string   `json:"status"`
+	Description    string   `json:"description"`
+	ImageUrl       string   `json:"image_url"`
+	Address        string   `json:"address"`
+	City           string   `json:"city"`
+	Amenities      []string `json:"amenities"`
+	Rating         float64  `json:"rating"`
+	TotalRooms     int64    `json:"totalrooms"`
+	AvailableRooms int64    `json:"availablerooms"`
+}
+
 func (p *Provider) HotelByID(id int64) (HotelDetail, error) {
 
-	url := fmt.Sprintf("%s/hotels/%d", p.config.BaseURL, id)
-	body, err := StartProviderGetServer(url, p.config.ApiKey)
+	url := fmt.Sprintf("%s/hotels/%d", p.BaseURL, id)
+	body, err := p.DoGetRequest(url, p.ApiKey)
 	if err != nil {
 		return HotelDetail{}, fmt.Errorf("Failed to connect to provider %w", err)
 	}
@@ -99,9 +85,15 @@ func (p *Provider) HotelByID(id int64) (HotelDetail, error) {
 
 }
 
+type HotelRoom struct {
+	Count   int64 `json:"count"`
+	HotelID int64 `json:"hotelid"`
+	Rooms   []RoomDetail
+}
+
 func (p *Provider) HotelRooms(id int64, date_from, date_to string) (HotelRoom, error) {
-	url := fmt.Sprintf("%s/hotels/%d/rooms?date_from=%s&date_to=%s", p.config.BaseURL, id, date_from, date_to)
-	body, err := StartProviderGetServer(url, p.config.ApiKey)
+	url := fmt.Sprintf("%s/hotels/%d/rooms?date_from=%s&date_to=%s", p.BaseURL, id, date_from, date_to)
+	body, err := p.DoGetRequest(url, p.ApiKey)
 	if err != nil {
 		return HotelRoom{}, fmt.Errorf("Failed to connect to provider")
 	}
@@ -112,14 +104,14 @@ func (p *Provider) HotelRooms(id int64, date_from, date_to string) (HotelRoom, e
 	return hotelRooms, nil
 }
 
-func StartProviderGetServer(url, apiKey string) ([]byte, error) {
+func (p *Provider) DoGetRequest(url, apiKey string) ([]byte, error) {
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create request: %w", err)
 	}
 	req.Header.Set("X-API-Key", apiKey)
-	client := &http.Client{}
-	resp, err := client.Do(req)
+
+	resp, err := p.Client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to make request to provider:  %w", err)
 	}
@@ -148,7 +140,6 @@ type ReservationResponse struct {
 	Status     string `json:"status"`
 }
 
-
 type ReservationRequest struct {
 	RoomID    int64  `json:"room_id"`
 	DateFrom  string `json:"date_from"`
@@ -167,22 +158,25 @@ func (e *ProviderError) Error() string {
 }
 
 func (p *Provider) ReserveHotel(ctx context.Context, req ReservationRequest) (ReservationResponse, error) {
-	base := strings.TrimRight(p.config.BaseURL, "/")
+	base := strings.TrimRight(p.BaseURL, "/")
 	url := fmt.Sprintf("%s/reservations", base)
 
 	var response ReservationResponse
-	err := p.StartProviderPostServer(ctx, url, p.config.ApiKey, req, &response)
+	err := p.DoPostRequest(ctx, url, p.ApiKey, req, &response)
 	if err != nil {
 		return ReservationResponse{}, fmt.Errorf("Failed to start provider post server: %w", err)
 	}
 	return response, nil
 }
 
-func (p *Provider) StartProviderPostServer(ctx context.Context, url, apikey string, payload any, out any) error {
+func (p *Provider) DoPostRequest(ctx context.Context, url, apikey string, payload any, out any) error {
 	reqBody, err := json.Marshal(payload)
 	if err != nil {
 		return fmt.Errorf("Failed to marshal the request body(payload) %w", err)
 	}
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(reqBody))
 	if err != nil {
 		return fmt.Errorf("Failed to create request %w", err)
@@ -190,7 +184,7 @@ func (p *Provider) StartProviderPostServer(ctx context.Context, url, apikey stri
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-API-Key", apikey)
 
-	resp, err := p.client.Do(req)
+	resp, err := p.Client.Do(req)
 	if err != nil {
 		return fmt.Errorf("Failed to create response: %w", err)
 	}

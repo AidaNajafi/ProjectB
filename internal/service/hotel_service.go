@@ -1,7 +1,6 @@
 package service
 
 import (
-	"authentication/internal/domain"
 	"authentication/internal/provider"
 	"authentication/internal/repository"
 	"context"
@@ -165,7 +164,7 @@ func (h *HotelService) ReserveHotelService(ctx context.Context, req ReservationR
 	ProviderResponse, err := h.Provider.ReserveHotel(ctx, ProviderRequest)
 	RepoResponse := mapProviderResponseToRepository(ProviderResponse)
 	if err != nil {
-		reason := domain.ClassifyProviderError(err)
+		reason := provider.ClassifyProviderError(err)
 		log.Println(reason)
 		storeErr := h.Store.FailedReservation(ctx, id, RepoResponse, reason)
 		log.Printf("DEBUG provider err=%v | storeErr=%T %#v | storeErr==nil? %v",
@@ -179,7 +178,7 @@ func (h *HotelService) ReserveHotelService(ctx context.Context, req ReservationR
 
 	err = h.Store.ConfirmedReservation(ctx, id, RepoResponse)
 	if err != nil {
-		reason := domain.ClassifyProviderError(err)
+		reason := provider.ClassifyProviderError(err)
 		return ReservationResponse{}, fmt.Errorf("Failed to confirm reservation: %w : %s", err, reason)
 	}
 	response := mapProviderResponseToService(ProviderResponse)

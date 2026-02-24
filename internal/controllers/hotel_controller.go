@@ -28,7 +28,8 @@ func (h *HotelController) GetHotelByDateController() gin.HandlerFunc {
 		hotelsByDate, err := h.svc.GetHotelsByDate(date)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{
-				"error": err.Error(),
+				"error":   err.Error(),
+				"message": "Failed to find hotels in this range of date",
 			})
 			return
 		}

@@ -1,7 +1,6 @@
-package domain
+package provider
 
 import (
-	"authentication/internal/provider"
 	"context"
 	"errors"
 )
@@ -27,7 +26,7 @@ func ClassifyProviderError(err error) FailureReason {
 	if errors.Is(err, context.DeadlineExceeded) {
 		return FailProviderTimeOut
 	}
-	var pe *provider.ProviderError
+	var pe *ProviderError
 	if errors.As(err, &pe) {
 		switch pe.StatusCode {
 		case 409:

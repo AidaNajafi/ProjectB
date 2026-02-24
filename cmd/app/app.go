@@ -1,13 +1,14 @@
 package app
 
 import (
+	"authentication/infra"
 	"authentication/internal/config"
 	"authentication/internal/controllers"
-	"authentication/internal/db"
 	"authentication/internal/provider"
 	"authentication/internal/repository"
 	"authentication/internal/server"
 	"authentication/internal/service"
+	"context"
 	"fmt"
 	"log"
 
@@ -27,8 +28,15 @@ func AppStart() error {
 	if err != nil {
 		return fmt.Errorf("Failed to load config: %w", err)
 	}
-
-	db, err := db.Init(cfg)
+	ctx := context.Background()
+	db, err := infra.StartConnectionPool(ctx, infra.ConnectionConfig{
+		User:     cfg.DBuser,
+		Password: cfg.DBpass,
+		Host:     cfg.DBhost,
+		Port:     cfg.DBport,
+		Name:     cfg.DBname,
+		Mode:     cfg.DBsslmode,
+	})
 	if err != nil {
 		return fmt.Errorf("Failed to initialize the connection pool %w", err)
 	}
@@ -37,13 +45,13 @@ func AppStart() error {
 
 	repo := repository.NewPostgresStore(db)
 	jwtToken := service.NewJwtService([]byte(cfg.SecretKey))
-	UserSvc := service.NewAuthService(repo, jwtToken)
 
-	provider := provider.NewProvider(cfg)
+	provider := provider.NewProvider(cfg.BaseURL, cfg.ApiKey, cfg.TimeOut)
 	HotelSvc := service.NewHotelService(provider, repo)
 
 	validator := validator.New()
 
+	UserSvc := service.NewAuthService(repo, jwtToken)
 	UserCtrl := controllers.NewUserController(UserSvc, validator)
 	newUserServer := server.NewUserServer(UserCtrl)
 	HotelCtrl := controllers.NewHotelController(HotelSvc)

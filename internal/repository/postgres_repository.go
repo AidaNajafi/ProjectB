@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"authentication/internal/domain"
+	"authentication/internal/provider"
 	"context"
 	"database/sql"
 	"fmt"
@@ -75,7 +75,7 @@ func (ps *PostgresStore) ConfirmedReservation(ctx context.Context, id int64, pr 
 	return nil
 }
 
-func (ps *PostgresStore) FailedReservation(ctx context.Context, id int64, pr ReservationResponse, reason domain.FailureReason) error {
+func (ps *PostgresStore) FailedReservation(ctx context.Context, id int64, pr ReservationResponse, reason provider.FailureReason) error {
 	const q = `
 	UPDATE reservation
 	SET reservation_status='failed',
