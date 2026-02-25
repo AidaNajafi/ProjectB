@@ -98,7 +98,7 @@ func (c *CBProvider) ReserveHotel(ctx context.Context, req ReservationRequest) (
 		return c.next.ReserveHotel(ctx, req)
 	})
 	if err != nil {
-		return ReservationResponse{}, nil
+		return ReservationResponse{}, err
 	}
 	return out.(ReservationResponse), nil
 }

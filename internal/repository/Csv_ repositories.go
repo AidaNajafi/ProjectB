@@ -16,8 +16,6 @@ type Repository struct {
 	filePath string
 }
 
-
-
 func NewRepo(path string) *Repository {
 	return &Repository{
 		filePath: path,
@@ -58,7 +56,7 @@ func (r *Repository) CreateUser(user UserInfo) error {
 	writer := csv.NewWriter(file)
 	defer writer.Flush()
 	record := []string{
-		strconv.Itoa(user.ID),
+		strconv.FormatInt(user.ID, 10),
 		user.Name,
 		user.Username,
 		user.Email,
@@ -121,7 +119,7 @@ func (r *Repository) ReadAll() ([]UserInfo, error) {
 		if len(rec) < 5 {
 			continue
 		}
-		id, err := strconv.Atoi(rec[0])
+		id, err := strconv.ParseInt(rec[0], 10, 64)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to convert id to int: %w", err)
 		}

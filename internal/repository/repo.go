@@ -6,7 +6,7 @@ import (
 )
 
 type UserInfo struct {
-	ID        int
+	ID        int64
 	Name      string
 	Username  string
 	Email     string
@@ -39,7 +39,7 @@ type Store interface {
 	GetUserByUsername(username string) (*UserInfo, error)
 	CreatePendingReservation(ctx context.Context, p ReservationRequest) (int64, error)
 	ConfirmedReservation(ctx context.Context, id int64, pr ReservationResponse) error
-	FailedReservation(ctx context.Context, id int64, pr ReservationResponse, reason provider.FailureReason) error
+	FailedReservation(ctx context.Context, id int64, reason provider.FailureReason) error
 }
 
 

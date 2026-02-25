@@ -23,7 +23,7 @@ func NewUserController(svc *service.AuthService, validator *validator.Validate) 
 }
 
 type SignUpControl struct {
-	ID        int    `json:"id"`
+	ID        int64    `json:"id"`
 	Name      string `json:"name" validate:"required"`
 	Username  string `json:"username" validate:"required"`
 	Email     string `json:"email" validate:"required,email"`

@@ -1,7 +1,9 @@
 package controllers
 
 import (
+	"authentication/internal/provider"
 	"authentication/internal/service"
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -99,15 +101,13 @@ func (h *HotelController) GetHotelRoomsController() gin.HandlerFunc {
 }
 
 type ReservationResponse struct {
-	ID         int64  `json:"id"`
-	ProviderID int64  `json:"provider_id"`
-	RoomID     int64  `json:"room_id"`
-	HotelID    int64  `json:"hotel_id"`
-	UserID     int64  `json:"user_id"`
-	UserPhone  string `json:"user_phone"`
-	DateFrom   string `json:"date_from"`
-	DateTo     string `json:"date_to"`
-	Status     string `json:"status"`
+	RoomID    int64  `json:"room_id"`
+	HotelID   int64  `json:"hotel_id"`
+	UserID    int64  `json:"user_id"`
+	UserPhone string `json:"user_phone"`
+	DateFrom  string `json:"date_from"`
+	DateTo    string `json:"date_to"`
+	Status    string `json:"status"`
 }
 
 type ReservationRequest struct {
@@ -120,6 +120,7 @@ type ReservationRequest struct {
 
 func (h *HotelController) ReserveHotelController() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
+
 		var body ReservationRequest
 
 		if err := ctx.ShouldBindJSON(&body); err != nil {
@@ -129,9 +130,15 @@ func (h *HotelController) ReserveHotelController() gin.HandlerFunc {
 			})
 			return
 		}
+
 		BodySvr := mapHandlerModelToService(body)
 		respSvr, err := h.svc.ReserveHotelService(ctx, BodySvr)
 		if err != nil {
+			var pe *provider.ProviderError
+			if errors.As(err, &pe) {
+				ctx.JSON(pe.StatusCode, gin.H{"error": string(pe.Body)})
+				return
+			}
 			ctx.JSON(http.StatusBadRequest, gin.H{
 				"error": err.Error(),
 			})
@@ -146,9 +153,24 @@ func (h *HotelController) ReserveHotelController() gin.HandlerFunc {
 }
 
 func mapHandlerModelToService(re ReservationRequest) service.ReservationRequest {
-	return service.ReservationRequest(re)
+	return service.ReservationRequest{
+		RoomID:    re.RoomID,
+		DateFrom:  re.DateFrom,
+		DateTo:    re.DateTo,
+		UserID:    re.UserID,
+		UserPhone: re.UserPhone,
+	}
+
 }
 
 func mapServiceModelToHandlere(res service.ReservationResponse) ReservationResponse {
-	return ReservationResponse(res)
+	return ReservationResponse{
+		RoomID:    res.RoomID,
+		HotelID:   res.HotelID,
+		UserID:    res.UserID,
+		UserPhone: res.UserPhone,
+		DateFrom:  res.DateFrom,
+		DateTo:    res.DateTo,
+		Status:    res.Status,
+	}
 }

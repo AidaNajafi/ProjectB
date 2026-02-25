@@ -26,6 +26,7 @@ type Config struct {
 	CBMaxRequest uint32
 	CBInterval   time.Duration
 	CBTimeOut    time.Duration
+	LogLevel     string
 }
 
 func LoadConfig() (*Config, error) {
@@ -77,5 +78,6 @@ func LoadConfig() (*Config, error) {
 		CBMaxRequest: maxReq,
 		CBInterval:   interval,
 		CBTimeOut:    timeOutCB,
+		LogLevel:     os.Getenv("LOG_LEVEL"),
 	}, nil
 }

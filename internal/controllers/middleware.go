@@ -1,80 +1,62 @@
 package controllers
 
 import (
+	"authentication/internal/logger"
 	"authentication/internal/service"
-	"fmt"
-	"log"
-	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
 
-type logLevel string
+const RequestIDKey = "request_id"
 
-var (
-	Info  logLevel = "INFO"
-	Warn  logLevel = "WARN"
-	Error logLevel = "ERROR"
-)
-
-func LoggerMiddleware() gin.HandlerFunc {
+func GetRequestID() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		requestID := ctx.GetHeader("X-Request-ID")
 		if requestID == "" {
 			requestID = uuid.NewString()
 		}
-		ctx.Set("request_id", requestID)
+		ctx.Set(RequestIDKey, requestID)
 		ctx.Writer.Header().Set("X-Request-ID", requestID)
 
-		ctx.Set("logf", func(format string, args ...any) {
-			log.Printf("authentication RequestID=%s"+format, append([]any{requestID}, args...)...)
-		})
-
-		start := time.Now()
 		ctx.Next()
-		latency := time.Since(start)
-		status := ctx.Writer.Status()
-		endpoint := ctx.FullPath()
-		var level logLevel
-		switch {
-		case status >= 400:
-			level = Error
-		default:
-			level = Info
-		}
 
-		log.Printf("[%s] time=%s, RequestID: %s, latency: %s, status: %d, endpoint: %s", level, time.Now().Format(time.RFC3339), requestID, latency, status, endpoint)
 	}
 }
 
 func JwtMiddleware(jwtSvc *service.JwtService) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		auth := ctx.GetHeader("Authorization")
-		if len(auth) < 8 || auth[:7] != "Bearer " {
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"error": "missing or invalid authorization header",
+		header := ctx.GetHeader("Authorization")
+		token := strings.TrimPrefix(header, "Bearer ")
+		if token == "" || token == header {
+			ctx.AbortWithStatusJSON(401, gin.H{
+				"error": "missing bearer token",
 			})
-			return
 		}
-		tokenStr := auth[7:]
-		token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
-			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
-			}
-			return []byte(jwtSvc.JwtSecret), nil
-		})
-		if err != nil || !token.Valid {
-			log.Println(err)
-			ctx.JSON(401, gin.H{
-				"error": "invalid token",
+		user, err := jwtSvc.VerifyToken(token)
+		if err != nil {
+			ctx.AbortWithStatusJSON(401, gin.H{
+				"error": "invalid or expired token",
 			})
-			ctx.Abort()
-			return
 		}
-
+		ctx.Set("user_id", user.ID)
 		ctx.Next()
+
+	}
+}
+
+func GeneralLog(l logger.Logger) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		start := time.Now()
+		ctx.Next()
+		reqId, _ := ctx.Get(RequestIDKey)
+		l.Info("http_request", map[string]any{
+			"method":     ctx.Request.Method,
+			"status":     ctx.Writer.Status(),
+			"duration":   time.Since(start).String(),
+			"request_id": reqId,
+		})
 	}
 }

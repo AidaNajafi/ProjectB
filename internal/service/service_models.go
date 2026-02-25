@@ -1,7 +1,7 @@
 package service
 
 type SignUpRequest struct {
-	ID        int
+	ID        int64
 	Name      string
 	Username  string
 	Email     string

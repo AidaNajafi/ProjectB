@@ -87,19 +87,15 @@ func (ps *PostgresStore) ConfirmedReservation(ctx context.Context, id int64, pr 
 	return nil
 }
 
-func (ps *PostgresStore) FailedReservation(ctx context.Context, id int64, pr ReservationResponse, reason provider.FailureReason) error {
+func (ps *PostgresStore) FailedReservation(ctx context.Context, id int64, reason provider.FailureReason) error {
 	const q = `
 	UPDATE reservation
 	SET reservation_status=$2,
-		provider_id=$3,
-		hotel_id=$4
 	WHERE id=$1 AND reservation_status='pending'
 	`
 	_, err := ps.db.ExecContext(ctx, q, 
 		id,
-		string(Failed), 
-		pr.ProviderID, 
-		pr.HotelID)
+		string(Failed))
 	if err != nil {
 		return fmt.Errorf("Failed to mark failure for reservation: %w", err)
 	}

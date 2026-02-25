@@ -4,6 +4,7 @@ import (
 	"authentication/infra"
 	"authentication/internal/config"
 	"authentication/internal/controllers"
+	"authentication/internal/logger"
 	"authentication/internal/provider"
 	"authentication/internal/repository"
 	"authentication/internal/server"
@@ -56,16 +57,20 @@ func AppStart() error {
 	}, func(name string, from, to gobreaker.State) {
 		log.Printf("%s: %s -> %s", name, from, to)
 	})
-	provider := provider.NewCBProvider(real, cb)
-	HotelSvc := service.NewHotelService(provider, repo)
+	
 
 	validator := validator.New()
 
 	UserSvc := service.NewAuthService(repo, jwtToken)
 	UserCtrl := controllers.NewUserController(UserSvc, validator)
 	newUserServer := server.NewUserServer(UserCtrl)
+
+
+	provider := provider.NewCBProvider(real, cb)
+	HotelSvc := service.NewHotelService(provider, repo)
 	HotelCtrl := controllers.NewHotelController(HotelSvc)
-	newHotelServer := server.NewHotelServer(HotelCtrl, jwtToken)
+	logger := logger.NewJSON(cfg.LogLevel)
+	newHotelServer := server.NewHotelServer(HotelCtrl, jwtToken, logger)
 
 	newUserServer.SetUpUserRoutes(router)
 	newHotelServer.SetUpHotelRoutes(router)

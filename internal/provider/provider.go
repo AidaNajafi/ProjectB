@@ -22,7 +22,7 @@ type Provider struct {
 func NewProvider(baseUrl, apiKey string, timeout time.Duration) *Provider {
 	return &Provider{BaseURL: baseUrl, ApiKey: apiKey, Client: &http.Client{
 		Timeout: timeout},
-	} 
+	}
 }
 
 type RoomDetail struct {
@@ -165,6 +165,7 @@ func (p *Provider) ReserveHotel(ctx context.Context, req ReservationRequest) (Re
 
 	var response ReservationResponse
 	err := p.DoPostRequest(ctx, url, p.ApiKey, req, &response)
+
 	if err != nil {
 		return ReservationResponse{}, fmt.Errorf("Failed to start provider post server: %w", err)
 	}
@@ -192,18 +193,18 @@ func (p *Provider) DoPostRequest(ctx context.Context, url, apikey string, payloa
 	}
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
+
 	if err != nil {
 		return fmt.Errorf("Failed to read response :%w", err)
+	}
+	log.Printf("PROVIDER status=%d body=%s", resp.StatusCode, string(body))
+	if out == nil {
+		return fmt.Errorf("the respnse is empty", out)
 	}
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
 		return &ProviderError{StatusCode: resp.StatusCode, Body: body}
 	}
-	log.Println(resp.StatusCode)
-
-	if out == nil {
-		return nil
-	}
-	if err := json.Unmarshal(body, out); err != nil {
+	if err := json.Unmarshal(body, &out); err != nil {
 		return fmt.Errorf("Failed to unmarshal request body to response: %w", err)
 	}
 

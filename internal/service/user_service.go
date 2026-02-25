@@ -52,7 +52,7 @@ func (a *AuthService) SignUp(user SignUpRequest) error {
 }
 
 type JwtUserInfo struct {
-	ID    int
+	ID    int64
 	Email string
 }
 

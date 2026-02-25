@@ -28,7 +28,7 @@ func (h *HotelService) GetHotelsByDate(ctx context.Context, date string) (HotelB
 	if err != nil {
 		return HotelByDate{}, fmt.Errorf("Failed to Get hotels for this date %s! %w", date, err)
 	}
-	hotelList:= make([]HotelDetail,0, len(hotels.Hotels))
+	hotelList := make([]HotelDetail, 0, len(hotels.Hotels))
 	for _, providerHotel := range hotels.Hotels {
 		mappedHotelDetail := mapHotelDetails(providerHotel)
 		hotelList = append(hotelList, mappedHotelDetail)
@@ -102,7 +102,7 @@ func (h *HotelService) GetHotelRooms(ctx context.Context, id int64, date_from, d
 	if err != nil {
 		return HotelRoom{}, fmt.Errorf("Failed to Get rooms with these params")
 	}
-	roomDetail:= make([]RoomDetail, 0, len(RoomsList.Rooms))
+	roomDetail := make([]RoomDetail, 0, len(RoomsList.Rooms))
 	for _, rooms := range RoomsList.Rooms {
 		mappedRoomDetail := mapRoomDetails(rooms)
 		roomDetail = append(roomDetail, mappedRoomDetail)
@@ -154,28 +154,27 @@ func (h *HotelService) ReserveHotelService(ctx context.Context, req ReservationR
 		return ReservationResponse{}, fmt.Errorf("invalid reservation request")
 	}
 	repoReq := mapServiceRequestToRepository(req)
+
 	id, err := h.Store.CreatePendingReservation(ctx, repoReq)
+
 	if err != nil {
 		return ReservationResponse{}, fmt.Errorf("failed creating pending reservation %w", err)
 	}
-
+	
 	ProviderRequest := mapServiceRequestToProvider(req)
-
+	
 	ProviderResponse, err := h.Provider.ReserveHotel(ctx, ProviderRequest)
-	RepoResponse := mapProviderResponseToRepository(ProviderResponse)
+	
 	if err != nil {
 		reason := provider.ClassifyProviderError(err)
 		log.Println(reason)
-		storeErr := h.Store.FailedReservation(ctx, id, RepoResponse, reason)
-		log.Printf("DEBUG provider err=%v | storeErr=%T %#v | storeErr==nil? %v",
-			err, storeErr, storeErr, storeErr == nil,
-		)
+		storeErr := h.Store.FailedReservation(ctx, id, reason)
 		if storeErr != nil {
 			return ReservationResponse{}, fmt.Errorf("Failed to mark failure for reservation: %w : %s", storeErr, reason)
 		}
 		return ReservationResponse{}, fmt.Errorf("Failed to reserve hotel: %w : %s", err, reason)
 	}
-
+	RepoResponse := mapProviderResponseToRepository(ProviderResponse)
 	err = h.Store.ConfirmedReservation(ctx, id, RepoResponse)
 	if err != nil {
 		reason := provider.ClassifyProviderError(err)
