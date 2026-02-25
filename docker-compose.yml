@@ -8,19 +8,30 @@ services:
     volumes:
       - .:/app          
       - ./data:/app/data  
+    env_file:
+      - .env
     ports:
       - "8080:8080"
-  
     environment: 
       DB_HOST: db
       DB_PORT: "5432"
-      DB_USER: ${DATABASE_USER}
-      DB_PASSWORD: ${DATABASE_PASSWORD}
-      DB_NAME: ${DATABASE_NAME}
+    depends_on:
+      - db
+
     
   db:
     image: postgres:16
+    restart: always
     environment:
       POSTGRES_USER: ${DATABASE_USER}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
       POSTGRES_DB: ${DATABASE_NAME}
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      
+volumes:
+  postgres_data: 
+    
+    
